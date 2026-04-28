@@ -178,6 +178,51 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 .sync-btn:hover{background:#163b5e;}
 .fb-toast{position:fixed;bottom:20px;right:20px;background:#4a3c10;color:#FFD700;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:bold;z-index:10000;opacity:0;transform:translateY(20px);transition:opacity .3s ease,transform .3s ease;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);border:1px solid #c8b06a;}
 .fb-toast.show{opacity:1;transform:translateY(0);}
+
+/* ═══════ FEATURE: AUTO-HIDE UPLOAD BAR ═══════ */
+.upload-hover-zone{
+  position:fixed;top:0;left:0;right:0;height:12px;z-index:6000;background:transparent;pointer-events:auto;
+}
+.upload-wrapper{
+  position:fixed;top:0;left:0;right:0;z-index:5999;
+  transform:translateY(-100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 3px 12px rgba(0,0,0,.25);
+}
+.upload-wrapper.visible{
+  transform:translateY(0);
+}
+
+/* ═══════ FEATURE: CONFIRM DIALOG ═══════ */
+.confirm-overlay{
+  position:fixed;inset:0;background:rgba(74,60,16,.65);z-index:20000;
+  display:none;align-items:center;justify-content:center;
+}
+.confirm-overlay.show{display:flex;}
+.confirm-dialog{
+  background:#fff;border-radius:14px;padding:24px 28px;width:370px;max-width:90vw;
+  text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.35);
+  animation:cdFadeIn .2s ease;
+}
+@keyframes cdFadeIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.confirm-dialog .cd-icon{font-size:32px;margin-bottom:8px;}
+.confirm-dialog .cd-title{font-size:14px;font-weight:bold;color:#4a3c10;margin-bottom:6px;}
+.confirm-dialog .cd-msg{font-size:12px;color:#555;margin-bottom:16px;word-break:break-word;}
+.confirm-dialog .cd-file{color:#C55A11;font-weight:bold;}
+.confirm-dialog .cd-btns{display:flex;gap:10px;justify-content:center;}
+.confirm-dialog .cd-btn{
+  padding:7px 22px;border-radius:20px;font-size:12px;font-weight:bold;cursor:pointer;border:none;
+  transition:filter .15s;
+}
+.confirm-dialog .cd-btn:hover{filter:brightness(.9);}
+.cd-btn-yes{background:#C55A11;color:#fff;}
+.cd-btn-no{background:#e8e8e8;color:#4a3c10;}
+
+/* ═══════ FEATURE: OWNERSHIP ═══════ */
+.file-tag .rm-disabled{
+  color:#999;cursor:not-allowed;font-size:11px;opacity:.5;
+}
+
 </style>
 </head>
 <body>
@@ -190,6 +235,8 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
   <div class="loading-sub" id="loadingSub">Reading file...</div>
 </div>
 
+<div class="upload-hover-zone" id="uploadHoverZone"></div>
+<div class="upload-wrapper" id="uploadWrapper">
 <div class="src-filter-bar" id="srcFilterBar" style="display:flex;">
  <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv" multiple>
  <button class="upload-btn-inline" onclick="document.getElementById('fileInput').click()">📂 Upload</button>
@@ -204,6 +251,7 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
  <span class="fb-status fb-offline" id="fbStatus">🔴 Connecting...</span>
  <button class="sync-btn" onclick="syncFromFirebase()">🔄 Sync</button>
 </div>
+</div><!-- /upload-wrapper -->
 <div class="fb-toast" id="fbToast"></div>
 
 <div class="freeze-pane" id="mainPanel">
@@ -336,8 +384,66 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 </div>
 <div class="gen" id="genInfo"></div>
 
+
+<!-- ═══ CONFIRM DELETE DIALOG ═══ -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-dialog">
+    <div class="cd-icon">⚠️</div>
+    <div class="cd-title">Remove File?</div>
+    <div class="cd-msg">Are you sure you want to remove <span class="cd-file" id="confirmFileName"></span>?<br>This will delete all rows from this file.</div>
+    <div class="cd-btns">
+      <button class="cd-btn cd-btn-no" id="confirmNo">Cancel</button>
+      <button class="cd-btn cd-btn-yes" id="confirmYes">Yes, Remove</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var allRows=[],loadedFiles=[],colFilters={},clientTags=[],srcChecked={},totalDups=0,dataLoaded=false,hasEdits=false;
+
+/* ═══ FEATURE: USER IDENTITY FOR OWNERSHIP ═══ */
+var USER_ID=localStorage.getItem('dashUserId');
+if(!USER_ID){USER_ID=crypto.randomUUID();localStorage.setItem('dashUserId',USER_ID);}
+
+/* ═══ FEATURE: CONFIRM DIALOG LOGIC ═══ */
+var pendingRemoveFile=null;
+function confirmRemoveFile(fileName){
+  var file=loadedFiles.find(function(f){return f.name===fileName;});
+  if(file && file.owner && file.owner!==USER_ID){
+    showToast('Only the uploader can remove this file.');
+    return;
+  }
+  pendingRemoveFile=fileName;
+  document.getElementById('confirmFileName').textContent=fileName;
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+document.getElementById('confirmYes').addEventListener('click',function(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  if(pendingRemoveFile){removeFile(pendingRemoveFile);pendingRemoveFile=null;}
+});
+document.getElementById('confirmNo').addEventListener('click',function(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  pendingRemoveFile=null;
+});
+document.getElementById('confirmOverlay').addEventListener('click',function(e){
+  if(e.target===this){this.classList.remove('show');pendingRemoveFile=null;}
+});
+
+/* ═══ FEATURE: AUTO-HIDE UPLOAD BAR ═══ */
+(function(){
+  var wrapper=document.getElementById('uploadWrapper');
+  var zone=document.getElementById('uploadHoverZone');
+  var hideTimer=null;
+  function showBar(){if(hideTimer){clearTimeout(hideTimer);hideTimer=null;}wrapper.classList.add('visible');}
+  function scheduleHide(){hideTimer=setTimeout(function(){wrapper.classList.remove('visible');hideTimer=null;},400);}
+  zone.addEventListener('mouseenter',showBar);
+  wrapper.addEventListener('mouseenter',showBar);
+  zone.addEventListener('mouseleave',scheduleHide);
+  wrapper.addEventListener('mouseleave',scheduleHide);
+  wrapper.addEventListener('dragover',function(e){e.preventDefault();showBar();});
+  wrapper.addEventListener('drop',function(){setTimeout(scheduleHide,2000);});
+})();
+
 var paretoOptions=[];
 var renderTimer=null;
 
@@ -439,7 +545,7 @@ function loadFromFirebase(callback){
     });
     Object.keys(fileSet).forEach(function(fn){
       var cnt=allRows.filter(function(r){return r.src===fn;}).length;
-      loadedFiles.push({name:fn,rows:cnt,sheet:'Sheet1'});
+      loadedFiles.push({name:fn,rows:cnt,sheet:'Sheet1',owner:'firebase'});
       srcChecked[fn]=true;
     });
     fbLastKnownCount=allRows.length;
@@ -646,7 +752,7 @@ function addWorkbook(wb,fileName){
       text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:rAmt,src:fileName});
     ra++;
   }
-  loadedFiles.push({name:fileName,rows:ra,sheet:sn});
+  loadedFiles.push({name:fileName,rows:ra,sheet:sn,owner:USER_ID});
   srcChecked[fileName]=true;
 }
 
@@ -709,8 +815,11 @@ function buildFileList(){
   bar.innerHTML='';bar.style.display=loadedFiles.length>0?'flex':'none';
   loadedFiles.forEach(function(f){
     var tag=document.createElement('span');tag.className='file-tag';
-    tag.innerHTML='&#128196; '+esc(f.name)+' <span style="opacity:.7;font-size:9px;">('+f.rows+')</span>'
-      +'<span class="rm" onclick="removeFile(\''+esc(f.name)+'\')">&#10005;</span>';
+    var isOwner=(!f.owner || f.owner===USER_ID);
+    var rmHtml=isOwner
+      ?'<span class="rm" onclick="confirmRemoveFile(\''+esc(f.name)+'\')">&#10005;</span>'
+      :'<span class="rm-disabled" title="Only the uploader can remove this file">&#128274;</span>';
+    tag.innerHTML='&#128196; '+esc(f.name)+' <span style="opacity:.7;font-size:9px;">('+f.rows+')</span>'+rmHtml;
     bar.appendChild(tag);
   });
 }
