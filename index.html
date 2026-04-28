@@ -219,6 +219,19 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 .cd-btn-yes{background:#C55A11;color:#fff;}
 .cd-btn-no{background:#e8e8e8;color:#4a3c10;}
 
+/* ═══════ FEATURE: CURRENCY CONVERSION BAR ═══════ */
+.conv-bar{
+  background:#7B6A2E;color:#fff;padding:5px 18px;font-size:11px;
+  display:flex;flex-wrap:nowrap;gap:6px;align-items:center;
+  border-bottom:2px solid #c8b06a;overflow-x:auto;min-height:28px;
+}
+.conv-bar .lbl{color:#FFD700;font-weight:bold;font-size:11px;white-space:nowrap;flex-shrink:0;}
+.conv-bar span.conv-item{
+  font-weight:bold;font-size:11px;background:#5a4a1e;
+  padding:3px 10px;border-radius:6px;border:1px solid #c8b06a;white-space:nowrap;
+}
+.conv-bar span.conv-item b{color:#FFD700;}
+
 </style>
 </head>
 <body>
@@ -267,6 +280,7 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
   </div>
   
   <div class="cur-bar" id="curBar"><span class="lbl">CURRENCY SUBTOTALS:</span></div>
+  <div class="conv-bar" id="convBar"><span class="lbl">CURRENCY CONVERSION:</span></div>
   <div class="filter-bar">
     <label>Aging:</label>
     <select id="fAging" onchange="applyFilters()">
@@ -456,7 +470,7 @@ function saveAllToFirebase(){
   var saveData=allRows.map(function(r,i){
     return{i:i,u:r.uniqueRef||'',n:r.name||'',r:r.ref||'',a:r.assign||'',dd:r.docDate||'',
       pt:r.pmtTerms||'',du:r.dueDate||'',c:r.cur||'',ag:r.aging||'',p:r.pareto||'',
-      t:r.text||'',co:r.corp||'',ct:r.ctrl||'',s:r.status||'',am:r.amt||0,sr:r.src||''};
+      t:r.text||'',co:r.corp||'',ct:r.ctrl||'',s:r.status||'',am:r.amt||0,ca:r.convAED||0,ce:r.convEUR||0,sr:r.src||''};
   });
   showToast('☁️ Saving '+allRows.length+' rows to cloud...');
   db.ref('dashboard/rows').set(saveData).then(function(){
@@ -511,7 +525,7 @@ function loadFromFirebase(callback){
       allRows.push({uniqueRef:d.u||'',name:d.n||'',ref:d.r||'',assign:d.a||'',
         docDate:d.dd||'',pmtTerms:d.pt||'',dueDate:d.du||'',cur:d.c||'',
         aging:d.ag||'',pareto:d.p||'',text:d.t||'',corp:d.co||'',
-        ctrl:d.ct||'',status:d.s||'',amt:d.am||0,src:d.sr||'firebase'});
+        ctrl:d.ct||'',status:d.s||'',amt:d.am||0,convAED:d.ca||0,convEUR:d.ce||0,src:d.sr||'firebase'});
       if(d.sr)fileSet[d.sr]=1;
     });
     Object.keys(fileSet).forEach(function(fn){
@@ -688,6 +702,11 @@ function addWorkbook(wb,fileName){
   var cCorp=fc(['corp','hfm','named client']);
   var cCtrl=fc(['assigned controller','controller','cpm']);
   var cAmt=fc(['remaining am','remain amt','open amt','balance','remaining amount','amount']);
+  var cConvAED=fc(['total bs','total lcy']);
+  var cConvEUR=-1;
+  for(var ge=0;ge<hdrs.length;ge++){
+    if(hdrs[ge].indexOf('group currency amount')>-1||hdrs[ge]==='eur'||(hdrs[ge].indexOf('group currency')>-1&&hdrs[ge].indexOf('doc')<0&&hdrs[ge].indexOf('curr')<0)){cConvEUR=ge;break;}
+  }
   var cSt=-1;
   for(var s=hdrs.length-1;s>=0;s--){if(hdrs[s].indexOf('status')>-1){cSt=s;break;}}
   if(cU<0)cU=0;
@@ -711,6 +730,12 @@ function addWorkbook(wb,fileName){
     var rAmt=0;
     if(cAmt>=0&&row[cAmt]!==''&&row[cAmt]!==null)
       rAmt=parseFloat(String(row[cAmt]).replace(/,/g,''))||0;
+    var rConvAED=0;
+    if(cConvAED>=0&&row[cConvAED]!==''&&row[cConvAED]!==null)
+      rConvAED=parseFloat(String(row[cConvAED]).replace(/,/g,''))||0;
+    var rConvEUR=0;
+    if(cConvEUR>=0&&row[cConvEUR]!==''&&row[cConvEUR]!==null)
+      rConvEUR=parseFloat(String(row[cConvEUR]).replace(/,/g,''))||0;
     if(!rU&&!rN)continue;
     if(rU==='Client Number'||rN==='Client Number')continue;
     if(!rU&&!rR)continue;
@@ -720,7 +745,7 @@ function addWorkbook(wb,fileName){
     if(rSt.toLowerCase().indexOf('error')>-1||rSt.indexOf('#')>-1)rSt='';
     allRows.push({uniqueRef:rU,name:rN,ref:rR,assign:rAs,docDate:rDD,
       pmtTerms:rPT,dueDate:rDue,cur:rCur,aging:rAg,pareto:rPar,
-      text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:rAmt,src:fileName});
+      text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:rAmt,convAED:rConvAED,convEUR:rConvEUR,src:fileName});
     ra++;
   }
   loadedFiles.push({name:fileName,rows:ra,sheet:sn});
@@ -1141,7 +1166,7 @@ function renderTable(){
   var cur=document.getElementById('fCur').value;
   var filterActive=isAnyFilterSelected();
   var frag=document.createDocumentFragment();
-  var vis=0,clients={},grandTot=0,curTots={};
+  var vis=0,clients={},grandTot=0,curTots={},convAEDtot=0,convEURtot=0;
   var agCur=0,ag030=0,ag3160=0,ag6190=0,ag91120=0,ag120p=0;
  var agingByCur={};
   var sumMap={};
@@ -1206,6 +1231,7 @@ function renderTable(){
     })(tr,i);
     vis++;clients[r.uniqueRef]=1;grandTot+=r.amt;
     curTots[r.cur]=(curTots[r.cur]||0)+r.amt;
+    convAEDtot+=(r.convAED||0);convEURtot+=(r.convEUR||0);
     agCur+=aC;ag030+=a0;ag3160+=a3;ag6190+=a6;ag91120+=a9;ag120p+=a1;
 
     if(r.cur){if(!agingByCur[r.cur])agingByCur[r.cur]={Current:0,'0-30':0,'31-60':0,'61-90':0,'91-120':0,'120+':0};
@@ -1228,6 +1254,15 @@ function renderTable(){
   document.getElementById('kpiPct').textContent=calcPct(grandTot,corp,par);
 
   buildCurBar(curTots,filterActive);
+  var cb=document.getElementById('convBar');
+  cb.innerHTML="<span class='lbl'>CURRENCY CONVERSION:</span>";
+  if(filterActive){
+    var cfmt=function(v){return v===0?'-':v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    var spA=document.createElement('span');spA.className='conv-item';
+    spA.innerHTML='AED <b>'+cfmt(convAEDtot)+'</b>';cb.appendChild(spA);
+    var spE=document.createElement('span');spE.className='conv-item';
+    spE.innerHTML='EUR <b>'+cfmt(convEURtot)+'</b>';cb.appendChild(spE);
+  }
   document.getElementById('recCount').textContent='Showing '+vis+' of '+allRows.length+' records'+(totalDups>0?' | '+totalDups+' dups removed':'');
 
   var fA=function(n){return n===0?'-':n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
@@ -1356,6 +1391,7 @@ function clearData(){
   ph.innerHTML='<td colspan="5" class="no-selection-msg">Select a filter above to populate summary</td>';
   sb.appendChild(ph);
   document.getElementById('curBar').innerHTML="<span class='lbl'>CURRENCY SUBTOTALS:</span>";
+  document.getElementById('convBar').innerHTML="<span class='lbl'>CURRENCY CONVERSION:</span>";
   document.getElementById('fileList').style.display='none';document.getElementById('fileList').innerHTML='';
   document.getElementById('dupStat').style.display='none';
   /* srcFilterBar stays visible */
