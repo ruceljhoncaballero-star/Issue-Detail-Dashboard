@@ -218,11 +218,6 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 .cd-btn-yes{background:#C55A11;color:#fff;}
 .cd-btn-no{background:#e8e8e8;color:#4a3c10;}
 
-/* ═══════ FEATURE: OWNERSHIP ═══════ */
-.file-tag .rm-disabled{
-  color:#999;cursor:not-allowed;font-size:11px;opacity:.5;
-}
-
 </style>
 </head>
 <body>
@@ -401,18 +396,9 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 <script>
 var allRows=[],loadedFiles=[],colFilters={},clientTags=[],srcChecked={},totalDups=0,dataLoaded=false,hasEdits=false;
 
-/* ═══ FEATURE: USER IDENTITY FOR OWNERSHIP ═══ */
-var USER_ID=localStorage.getItem('dashUserId');
-if(!USER_ID){USER_ID=crypto.randomUUID();localStorage.setItem('dashUserId',USER_ID);}
-
 /* ═══ FEATURE: CONFIRM DIALOG LOGIC ═══ */
 var pendingRemoveFile=null;
 function confirmRemoveFile(fileName){
-  var file=loadedFiles.find(function(f){return f.name===fileName;});
-  if(file && file.owner && file.owner!==USER_ID){
-    showToast('Only the uploader can remove this file.');
-    return;
-  }
   pendingRemoveFile=fileName;
   document.getElementById('confirmFileName').textContent=fileName;
   document.getElementById('confirmOverlay').classList.add('show');
@@ -545,7 +531,7 @@ function loadFromFirebase(callback){
     });
     Object.keys(fileSet).forEach(function(fn){
       var cnt=allRows.filter(function(r){return r.src===fn;}).length;
-      loadedFiles.push({name:fn,rows:cnt,sheet:'Sheet1',owner:'firebase'});
+      loadedFiles.push({name:fn,rows:cnt,sheet:'Sheet1'});
       srcChecked[fn]=true;
     });
     fbLastKnownCount=allRows.length;
@@ -752,7 +738,7 @@ function addWorkbook(wb,fileName){
       text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:rAmt,src:fileName});
     ra++;
   }
-  loadedFiles.push({name:fileName,rows:ra,sheet:sn,owner:USER_ID});
+  loadedFiles.push({name:fileName,rows:ra,sheet:sn});
   srcChecked[fileName]=true;
 }
 
@@ -815,11 +801,8 @@ function buildFileList(){
   bar.innerHTML='';bar.style.display=loadedFiles.length>0?'flex':'none';
   loadedFiles.forEach(function(f){
     var tag=document.createElement('span');tag.className='file-tag';
-    var isOwner=(!f.owner || f.owner===USER_ID);
-    var rmHtml=isOwner
-      ?'<span class="rm" onclick="confirmRemoveFile(\''+esc(f.name)+'\')">&#10005;</span>'
-      :'<span class="rm-disabled" title="Only the uploader can remove this file">&#128274;</span>';
-    tag.innerHTML='&#128196; '+esc(f.name)+' <span style="opacity:.7;font-size:9px;">('+f.rows+')</span>'+rmHtml;
+    tag.innerHTML='&#128196; '+esc(f.name)+' <span style="opacity:.7;font-size:9px;">('+f.rows+')</span>'
+      +'<span class="rm" onclick="confirmRemoveFile(\''+esc(f.name)+'\')">&#10005;</span>';
     bar.appendChild(tag);
   });
 }
