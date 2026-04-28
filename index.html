@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Calibri,Arial,sans-serif;font-size:11px;background:#f0f0f0;}
@@ -179,8 +178,6 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 .sync-btn:hover{background:#163b5e;}
 .fb-toast{position:fixed;bottom:20px;right:20px;background:#4a3c10;color:#FFD700;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:bold;z-index:10000;opacity:0;transform:translateY(20px);transition:opacity .3s ease,transform .3s ease;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);border:1px solid #c8b06a;}
 .fb-toast.show{opacity:1;transform:translateY(0);}
-
-.login-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(74,60,16,.95);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;}.login-overlay.hidden{display:none;}.login-title{color:#FFD700;font-size:28px;font-weight:bold;letter-spacing:2px;}.login-sub{color:#fff;font-size:14px;opacity:.85;}.login-btn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#333;border:2px solid #c8b06a;border-radius:30px;padding:12px 32px;font-size:14px;font-weight:bold;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,.2);}.login-btn:hover{background:#fff3cd;transform:scale(1.03);}.login-btn img{width:22px;height:22px;}.login-note{color:#c8b06a;font-size:11px;opacity:.7;}.login-denied{display:none;color:#FF6B6B;font-size:13px;font-weight:bold;background:rgba(255,0,0,.1);padding:10px 20px;border-radius:10px;border:1px solid #FF6B6B;}.login-denied.show{display:block;}.user-bar{background:#4a3c10;color:#fff;padding:4px 18px;display:none;align-items:center;gap:8px;font-size:11px;border-bottom:1px solid #c8b06a;}.user-email{color:#FFD700;font-weight:bold;}.role-badge{border-radius:12px;padding:2px 10px;font-size:10px;font-weight:bold;text-transform:uppercase;}.role-admin{background:#00B050;color:#fff;}.role-viewer{background:#1F4E79;color:#fff;}.logout-btn{margin-left:auto;background:#6B5A2A;color:#FFD700;border:1px solid #c8b06a;border-radius:12px;padding:2px 12px;font-size:10px;font-weight:bold;cursor:pointer;}.logout-btn:hover{background:#4a3c10;}.viewer-hidden{display:none !important;}
 </style>
 </head>
 <body>
@@ -193,8 +190,6 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
   <div class="loading-sub" id="loadingSub">Reading file...</div>
 </div>
 
-<div class="login-overlay" id="loginOverlay"><div class="login-title">📊 ISSUE DETAIL DASHBOARD</div><div class="login-sub">Secure Access for Authorized Users</div><button class="login-btn" onclick="signInWithGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G"> Sign in with Google</button><div class="login-note">Only @publicisresources.com emails are authorized</div><div class="login-denied" id="loginDenied">❌ Access Denied — Only @publicisresources.com accounts can access this dashboard.</div></div>
-<div class="user-bar" id="userBar"><span>👤</span><span class="user-email" id="userEmail"></span><span class="role-badge role-viewer" id="roleBadge">Viewer</span><span class="fb-status fb-offline" id="fbStatus2">🔴 Connecting...</span><button class="sync-btn" onclick="syncFromFirebase()">🔄 Sync</button><button class="logout-btn" onclick="signOutUser()">🚪 Logout</button></div>
 <div class="src-filter-bar" id="srcFilterBar" style="display:flex;">
  <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv" multiple>
  <button class="upload-btn-inline" onclick="document.getElementById('fileInput').click()">📂 Upload</button>
@@ -206,6 +201,8 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
  <span id="srcChkList"></span>
  <button id="srcAllBtn" style="display:none;padding:2px 8px;background:#7B6A2E;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px;" onclick="selectAllSrc(true)">All</button>
  <button id="srcNoneBtn" style="display:none;padding:2px 8px;background:#4a3c10;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px;" onclick="selectAllSrc(false)">None</button>
+ <span class="fb-status fb-offline" id="fbStatus">🔴 Connecting...</span>
+ <button class="sync-btn" onclick="syncFromFirebase()">🔄 Sync</button>
 </div>
 <div class="fb-toast" id="fbToast"></div>
 
@@ -357,27 +354,17 @@ var firebaseConfig={
 };
 firebase.initializeApp(firebaseConfig);
 var db=firebase.database();
-var auth=firebase.auth();
-var currentUser=null;
-var currentRole='viewer';
-var ALLOWED_DOMAIN='publicisresources.com';
 var fbSyncing=false;
 var fbLastKnownCount=0;
 
 db.ref('.info/connected').on('value',function(snap){
-  var el=document.getElementById('fbStatus2');
+  var el=document.getElementById('fbStatus');
   if(el){
     if(snap.val()===true){el.className='fb-status fb-online';el.textContent='🟢 Live';}
     else{el.className='fb-status fb-offline';el.textContent='🔴 Offline';}
   }
 });
 
-function signInWithGoogle(){var p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});auth.signInWithPopup(p).catch(function(e){console.error('Sign-in error:',e);});}
-function signOutUser(){auth.signOut().then(function(){currentUser=null;currentRole='viewer';document.getElementById('loginOverlay').classList.remove('hidden');document.getElementById('userBar').style.display='none';document.getElementById('loginDenied').classList.remove('show');});}
-function isAllowedEmail(e){return e&&e.toLowerCase().endsWith('@'+ALLOWED_DOMAIN);}
-function getUserRole(uid,cb){db.ref('users/'+uid+'/role').once('value',function(s){cb(s.val()||'viewer');});}
-function saveUserInfo(u,r){db.ref('users/'+u.uid).update({email:u.email,name:u.displayName||'',role:r,lastLogin:new Date().toISOString()});}
-function applyRole(r){currentRole=r;var b=document.getElementById('roleBadge');if(b){b.textContent=r.charAt(0).toUpperCase()+r.slice(1);b.className='role-badge '+(r==='admin'?'role-admin':'role-viewer');}document.querySelectorAll('.upload-btn-inline,#saveBtn').forEach(function(el){if(r==='viewer')el.classList.add('viewer-hidden');else el.classList.remove('viewer-hidden');});var fi=document.getElementById('fileInput');if(fi)fi.disabled=(r==='viewer');}
 function showToast(msg){
   var t=document.getElementById('fbToast');
   if(!t)return;
@@ -388,7 +375,7 @@ function showToast(msg){
 
 /* SAVE ALL ROWS - with error handling and progress feedback */
 function saveAllToFirebase(){
-  if(!allRows.length||currentRole==='viewer')return;
+  if(!allRows.length)return;
   var saveData=allRows.map(function(r,i){
     return{i:i,u:r.uniqueRef||'',n:r.name||'',r:r.ref||'',a:r.assign||'',dd:r.docDate||'',
       pt:r.pmtTerms||'',du:r.dueDate||'',c:r.cur||'',ag:r.aging||'',p:r.pareto||'',
@@ -412,7 +399,6 @@ function saveAllToFirebase(){
 
 /* SAVE SINGLE FIELD - with error handling */
 function saveFieldToFirebase(rowIdx,field,value){
-  if(currentRole==='viewer')return;
   var key=(field==='pareto')?'p':'s';
   db.ref('dashboard/rows/'+rowIdx+'/'+key).set(value).catch(function(err){
     console.error('Field save error:',err);
@@ -519,7 +505,7 @@ function listenForFieldChanges(){
 }
 
 window.addEventListener('beforeunload',function(){
-  if(dataLoaded&&allRows.length>0&&currentRole!=='viewer')saveAllToFirebase();
+  if(dataLoaded&&allRows.length>0)saveAllToFirebase();
 });
 var tagInput=document.getElementById('tagInput');
 var tagWrap=document.getElementById('tagWrap');
@@ -715,7 +701,7 @@ function finalizeLoad(){
   document.getElementById('lastUpdate').textContent='Loaded: '+now.toLocaleTimeString();
   document.getElementById('genInfo').textContent='Generated: '+now.toLocaleString()+' | Rows: '+allRows.length+' | Dups: '+totalDups;
   renderTable();
-  if(!fbSyncing&&currentRole!=='viewer')saveAllToFirebase();
+  if(!fbSyncing)saveAllToFirebase();
 }
 
 function buildFileList(){
@@ -884,7 +870,6 @@ function makeEditablePareto(td,rowIdx){
   td.innerHTML=esc(allRows[rowIdx].pareto);
   td.onclick=function(e){
     e.stopPropagation();
-    if(currentRole==='viewer')return;
     if(td.querySelector('input'))return;
     var cur=allRows[rowIdx].pareto;
     var inp=document.createElement('input');
@@ -924,7 +909,6 @@ function makeEditableStatus(td,rowIdx){
   td.innerHTML=esc(allRows[rowIdx].status);
   td.onclick=function(e){
     e.stopPropagation();
-    if(currentRole==='viewer')return;
     if(td.querySelector('textarea'))return;
     var cur=allRows[rowIdx].status;
     var ta=document.createElement('textarea');
@@ -1420,16 +1404,20 @@ function toggleSummary(){
 
 
 
-/* == AUTH STATE == */
-auth.onAuthStateChanged(function(user){
-  if(user){
-    if(!isAllowedEmail(user.email)){document.getElementById('loginDenied').classList.add('show');auth.signOut();return;}
-    currentUser=user;document.getElementById('loginOverlay').classList.add('hidden');document.getElementById('userBar').style.display='flex';document.getElementById('userEmail').textContent=user.email;document.getElementById('loginDenied').classList.remove('show');
-    getUserRole(user.uid,function(role){applyRole(role);saveUserInfo(user,role);showToast('🟢 Welcome, '+(user.displayName||user.email)+'!');
-      fbSyncing=true;loadFromFirebase(function(found){if(found){if(typeof deduplicateRows==='function'){var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;}try{finalizeLoad();}catch(e){console.warn('err',e);}}setTimeout(function(){fbSyncing=false;listenForFieldChanges();},1000);});
-    });
-  }else{document.getElementById('loginOverlay').classList.remove('hidden');document.getElementById('userBar').style.display='none';}
-});
+/* == FIREBASE: Silent auto-load == */
+(function(){
+  fbSyncing=true;
+  loadFromFirebase(function(found){
+    if(found){
+      if(typeof deduplicateRows==='function'){var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;}
+      try{finalizeLoad();}catch(e){console.warn('Auto-load error:',e);}
+    }
+    setTimeout(function(){
+      fbSyncing=false;
+      listenForFieldChanges();
+    },1000);
+  });
+})();
 </script>
 </body>
 </html>
