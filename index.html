@@ -517,7 +517,7 @@ function finalizeLoad(){
   var mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var rd=mo[now.getMonth()]+' '+now.getFullYear();
   document.getElementById('hdrRight').textContent='Credit Control \u00a0|\u00a0 '+loadedFiles.length+' file(s) \u00a0|\u00a0 As of '+rd;
-  document.getElementById('statusHeader').textContent='Status as of '+rd+' \u2195';
+  document.getElementById('statusHeader').textContent='Status \u2195';
   document.getElementById('lastUpdate').textContent='Loaded: '+now.toLocaleTimeString();
   document.getElementById('genInfo').textContent='Generated: '+now.toLocaleString()+' | Rows: '+allRows.length+' | Dups: '+totalDups;
   renderTable();
