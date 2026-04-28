@@ -702,11 +702,22 @@ function addWorkbook(wb,fileName){
   var cCorp=fc(['corp','hfm','named client']);
   var cCtrl=fc(['assigned controller','controller','cpm']);
   var cAmt=fc(['remaining am','remain amt','open amt','balance','remaining amount','amount']);
-  var cConvAED=fc(['total bs','total lcy']);
+  var cConvAED=-1;
+  for(var ca=0;ca<hdrs.length;ca++){
+    var h=hdrs[ca];
+    if(h.indexOf('total bs')>-1||h.indexOf('total lcy')>-1||h==='lcy'||(h.indexOf('receivable')>-1&&h.indexOf('bs')>-1)){cConvAED=ca;break;}
+  }
   var cConvEUR=-1;
   for(var ge=0;ge<hdrs.length;ge++){
-    if(hdrs[ge].indexOf('group currency amount')>-1||hdrs[ge]==='eur'||(hdrs[ge].indexOf('group currency')>-1&&hdrs[ge].indexOf('doc')<0&&hdrs[ge].indexOf('curr')<0)){cConvEUR=ge;break;}
+    var he=hdrs[ge];
+    if(he.indexOf('group currency amount')>-1||he.indexOf('group curr')>-1||he==='eur'||he==='eur amount'||he.indexOf('eur ')>-1){
+      if(he.indexOf('doc')>-1)continue;
+      cConvEUR=ge;break;
+    }
   }
+  console.log('[Dashboard] Headers:',hdrs);
+  console.log('[Dashboard] AED col (cConvAED):',cConvAED,cConvAED>=0?hdrs[cConvAED]:'NOT FOUND');
+  console.log('[Dashboard] EUR col (cConvEUR):',cConvEUR,cConvEUR>=0?hdrs[cConvEUR]:'NOT FOUND');
   var cSt=-1;
   for(var s=hdrs.length-1;s>=0;s--){if(hdrs[s].indexOf('status')>-1){cSt=s;break;}}
   if(cU<0)cU=0;
