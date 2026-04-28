@@ -171,11 +171,13 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
   word-break:break-word;
 }
 
-.fb-status{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:bold;padding:2px 10px;border-radius:14px;border:1px solid #c8b06a;white-space:nowrap;}
+.fb-status{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:bold;padding:2px 10px;border-radius:14px;border:1px solid #c8b06a;white-space:nowrap;margin-left:auto;}
 .fb-online{background:#E2EFDA;color:#00B050;}
 .fb-offline{background:#FCE4D6;color:#C55A11;}
 .sync-btn{background:#1F4E79;color:#fff;border:none;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:bold;cursor:pointer;white-space:nowrap;}
 .sync-btn:hover{background:#163b5e;}
+.fb-toast{position:fixed;bottom:20px;right:20px;background:#4a3c10;color:#FFD700;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:bold;z-index:10000;opacity:0;transform:translateY(20px);transition:opacity .3s ease,transform .3s ease;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);border:1px solid #c8b06a;}
+.fb-toast.show{opacity:1;transform:translateY(0);}
 </style>
 </head>
 <body>
@@ -202,6 +204,7 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
  <span class="fb-status fb-offline" id="fbStatus">🔴 Connecting...</span>
  <button class="sync-btn" onclick="syncFromFirebase()">🔄 Sync</button>
 </div>
+<div class="fb-toast" id="fbToast"></div>
 
 <div class="freeze-pane" id="mainPanel">
   <div class="hdr">
@@ -338,7 +341,7 @@ var allRows=[],loadedFiles=[],colFilters={},clientTags=[],srcChecked={},totalDup
 var paretoOptions=[];
 var renderTimer=null;
 
-/* ══ FIREBASE INIT ══ */
+/* == FIREBASE INIT == */
 var firebaseConfig={
   apiKey:"AIzaSyBHrkqwWIdHKoMobuAuP2GYtafnx5Lhrb8",
   authDomain:"ar-dashboard-abf44.firebaseapp.com",
@@ -352,17 +355,27 @@ var firebaseConfig={
 firebase.initializeApp(firebaseConfig);
 var db=firebase.database();
 var fbSyncing=false;
+var fbLastKnownCount=0;
 
 /* Monitor connection */
 db.ref('.info/connected').on('value',function(snap){
   var el=document.getElementById('fbStatus');
   if(el){
-    if(snap.val()===true){el.className='fb-status fb-online';el.textContent='\u{1F7E2} Live';}
-    else{el.className='fb-status fb-offline';el.textContent='\u{1F534} Offline';}
+    if(snap.val()===true){el.className='fb-status fb-online';el.textContent='🟢 Live';}
+    else{el.className='fb-status fb-offline';el.textContent='🔴 Offline';}
   }
 });
 
-/* ══ FIREBASE: Save all rows ══ */
+/* == Toast notification == */
+function showToast(msg){
+  var t=document.getElementById('fbToast');
+  if(!t)return;
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+/* == FIREBASE: Save all rows == */
 function saveAllToFirebase(){
   if(!allRows.length)return;
   var saveData=allRows.map(function(r,i){
@@ -377,16 +390,17 @@ function saveAllToFirebase(){
     rowCount:allRows.length,
     fileCount:loadedFiles.length
   });
+  fbLastKnownCount=allRows.length;
 }
 
-/* ══ FIREBASE: Save single field change ══ */
+/* == FIREBASE: Save single field change == */
 function saveFieldToFirebase(rowIdx,field,value){
   var key=(field==='pareto')?'p':'s';
   db.ref('dashboard/rows/'+rowIdx+'/'+key).set(value);
   db.ref('dashboard/meta/lastUpdatedAt').set(new Date().toISOString());
 }
 
-/* ══ FIREBASE: Load data from Firebase on page load ══ */
+/* == FIREBASE: Load data from Firebase == */
 function loadFromFirebase(callback){
   db.ref('dashboard/rows').once('value',function(snap){
     var data=snap.val();
@@ -406,31 +420,26 @@ function loadFromFirebase(callback){
       loadedFiles.push({name:fn,rows:cnt,sheet:'Sheet1'});
       srcChecked[fn]=true;
     });
+    fbLastKnownCount=allRows.length;
     if(callback)callback(true);
   });
 }
 
-/* ══ FIREBASE: Listen for real-time field changes ══ */
-function listenForFieldChanges(){
-  db.ref('dashboard/rows').on('child_changed',function(snap){
-    if(fbSyncing)return;
-    var idx=parseInt(snap.key);
-    var d=snap.val();
-    if(isNaN(idx)||!d||idx>=allRows.length)return;
-    var changed=false;
-    if(d.p!==undefined&&allRows[idx].pareto!==d.p){allRows[idx].pareto=d.p;changed=true;}
-    if(d.s!==undefined&&allRows[idx].status!==d.s){allRows[idx].status=d.s;changed=true;}
-    if(changed&&typeof scheduleRender==='function')scheduleRender();
-  });
-  db.ref('dashboard/meta/rowCount').on('value',function(snap){
-    var rc=snap.val();
-    if(rc&&rc!==allRows.length&&dataLoaded){
-      syncFromFirebase();
+/* == FIREBASE: Silent background sync (no loading overlay) == */
+function silentSync(){
+  if(fbSyncing)return;
+  fbSyncing=true;
+  loadFromFirebase(function(found){
+    if(found){
+      if(typeof deduplicateRows==='function'){var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;}
+      try{finalizeLoad();}catch(e){console.warn('Silent sync error:',e);}
+      showToast('🔄 Data updated by another user');
     }
+    fbSyncing=false;
   });
 }
 
-/* ══ FIREBASE: Manual sync ══ */
+/* == FIREBASE: Manual sync (with loading overlay) == */
 function syncFromFirebase(){
   fbSyncing=true;
   if(typeof showLoading==='function')showLoading('Syncing from cloud...','Fetching latest data...');
@@ -444,6 +453,36 @@ function syncFromFirebase(){
     if(typeof hideLoading==='function')setTimeout(hideLoading,500);
   });
 }
+
+/* == FIREBASE: Listen for real-time changes (auto-sync) == */
+function listenForFieldChanges(){
+  /* Listen for individual field changes (Status/Pareto) */
+  db.ref('dashboard/rows').on('child_changed',function(snap){
+    if(fbSyncing)return;
+    var idx=parseInt(snap.key);
+    var d=snap.val();
+    if(isNaN(idx)||!d||idx>=allRows.length)return;
+    var changed=false;
+    if(d.p!==undefined&&allRows[idx].pareto!==d.p){allRows[idx].pareto=d.p;changed=true;}
+    if(d.s!==undefined&&allRows[idx].status!==d.s){allRows[idx].status=d.s;changed=true;}
+    if(changed){
+      if(typeof scheduleRender==='function')scheduleRender();
+      showToast('🟢 Status/Pareto updated');
+    }
+  });
+  /* Listen for new data uploads (row count changed = someone uploaded new file) */
+  db.ref('dashboard/meta/rowCount').on('value',function(snap){
+    var rc=snap.val();
+    if(rc&&rc!==fbLastKnownCount&&dataLoaded&&!fbSyncing){
+      silentSync();
+    }
+  });
+}
+
+/* == Auto-save when closing browser (safety net) == */
+window.addEventListener('beforeunload',function(){
+  if(dataLoaded&&allRows.length>0)saveAllToFirebase();
+});
 var tagInput=document.getElementById('tagInput');
 var tagWrap=document.getElementById('tagWrap');
 
@@ -638,6 +677,7 @@ function finalizeLoad(){
   document.getElementById('lastUpdate').textContent='Loaded: '+now.toLocaleTimeString();
   document.getElementById('genInfo').textContent='Generated: '+now.toLocaleString()+' | Rows: '+allRows.length+' | Dups: '+totalDups;
   renderTable();
+  if(!fbSyncing)saveAllToFirebase();
 }
 
 function buildFileList(){
@@ -1340,7 +1380,7 @@ function toggleSummary(){
 
 
 
-/* ══ FIREBASE: Auto-load on page open ══ */
+/* == FIREBASE: Silent auto-load on page open == */
 (function(){
   loadFromFirebase(function(found){
     if(found){
