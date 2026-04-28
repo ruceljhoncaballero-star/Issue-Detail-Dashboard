@@ -196,28 +196,28 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 
 /* ═══════ FEATURE: CONFIRM DIALOG ═══════ */
 .confirm-overlay{
-  position:fixed;inset:0;background:rgba(74,60,16,.65);z-index:20000;
+  position:fixed;inset:0;background:rgba(74,60,16,.75);z-index:20000;
   display:none;align-items:center;justify-content:center;
 }
 .confirm-overlay.show{display:flex;}
 .confirm-dialog{
-  background:#fff;border-radius:14px;padding:24px 28px;width:370px;max-width:90vw;
-  text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.35);
+  background:#4a3c10;border:2px solid #c8b06a;border-radius:14px;padding:24px 28px;width:370px;max-width:90vw;
+  text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 1px rgba(200,176,106,.3);
   animation:cdFadeIn .2s ease;
 }
 @keyframes cdFadeIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
-.confirm-dialog .cd-icon{font-size:32px;margin-bottom:8px;}
-.confirm-dialog .cd-title{font-size:14px;font-weight:bold;color:#4a3c10;margin-bottom:6px;}
-.confirm-dialog .cd-msg{font-size:12px;color:#555;margin-bottom:16px;word-break:break-word;}
-.confirm-dialog .cd-file{color:#C55A11;font-weight:bold;}
+.confirm-dialog .cd-icon{font-size:32px;margin-bottom:8px;background:#7B6A2E;width:52px;height:52px;line-height:52px;border-radius:50%;display:inline-block;border:2px solid #c8b06a;}
+.confirm-dialog .cd-title{font-size:14px;font-weight:bold;color:#FFD700;margin-bottom:6px;}
+.confirm-dialog .cd-msg{font-size:12px;color:#e0d5b8;margin-bottom:16px;word-break:break-word;}
+.confirm-dialog .cd-file{color:#FFD700;font-weight:bold;}
 .confirm-dialog .cd-btns{display:flex;gap:10px;justify-content:center;}
 .confirm-dialog .cd-btn{
   padding:7px 22px;border-radius:20px;font-size:12px;font-weight:bold;cursor:pointer;border:none;
   transition:filter .15s;
 }
-.confirm-dialog .cd-btn:hover{filter:brightness(.9);}
-.cd-btn-yes{background:#C55A11;color:#fff;}
-.cd-btn-no{background:#e8e8e8;color:#4a3c10;}
+.confirm-dialog .cd-btn:hover{filter:brightness(1.1);}
+.cd-btn-yes{background:#FFD700;color:#4a3c10;}
+.cd-btn-no{background:#7B6A2E;color:#fff;border:1px solid #c8b06a;}
 
 /* ═══════ FEATURE: CURRENCY CONVERSION BAR ═══════ */
 .conv-bar{
