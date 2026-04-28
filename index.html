@@ -179,18 +179,19 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 .fb-toast{position:fixed;bottom:20px;right:20px;background:#4a3c10;color:#FFD700;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:bold;z-index:10000;opacity:0;transform:translateY(20px);transition:opacity .3s ease,transform .3s ease;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);border:1px solid #c8b06a;}
 .fb-toast.show{opacity:1;transform:translateY(0);}
 
-/* ═══════ FEATURE: AUTO-HIDE UPLOAD BAR ═══════ */
-.upload-hover-zone{
-  position:fixed;top:0;left:0;right:0;height:12px;z-index:6000;background:transparent;pointer-events:auto;
-}
+/* ═══════ FEATURE: AUTO-HIDE UPLOAD BAR (pure CSS) ═══════ */
 .upload-wrapper{
-  position:fixed;top:0;left:0;right:0;z-index:5999;
-  transform:translateY(-100%);
-  transition:transform .3s cubic-bezier(.4,0,.2,1);
-  box-shadow:0 3px 12px rgba(0,0,0,.25);
+  max-height:5px;
+  overflow:hidden;
+  opacity:0.15;
+  transition:max-height .35s ease, opacity .25s ease;
+  border-top:3px solid #c8b06a;
+  background:#f9f3e0;
 }
-.upload-wrapper.visible{
-  transform:translateY(0);
+.upload-wrapper:hover{
+  max-height:60px;
+  overflow:visible;
+  opacity:1;
 }
 
 /* ═══════ FEATURE: CONFIRM DIALOG ═══════ */
@@ -230,7 +231,6 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
   <div class="loading-sub" id="loadingSub">Reading file...</div>
 </div>
 
-<div class="upload-hover-zone" id="uploadHoverZone"></div>
 <div class="upload-wrapper" id="uploadWrapper">
 <div class="src-filter-bar" id="srcFilterBar" style="display:flex;">
  <input type="file" id="fileInput" accept=".xlsx,.xls,.xlsm,.csv" multiple>
@@ -414,21 +414,6 @@ document.getElementById('confirmNo').addEventListener('click',function(){
 document.getElementById('confirmOverlay').addEventListener('click',function(e){
   if(e.target===this){this.classList.remove('show');pendingRemoveFile=null;}
 });
-
-/* ═══ FEATURE: AUTO-HIDE UPLOAD BAR ═══ */
-(function(){
-  var wrapper=document.getElementById('uploadWrapper');
-  var zone=document.getElementById('uploadHoverZone');
-  var hideTimer=null;
-  function showBar(){if(hideTimer){clearTimeout(hideTimer);hideTimer=null;}wrapper.classList.add('visible');}
-  function scheduleHide(){hideTimer=setTimeout(function(){wrapper.classList.remove('visible');hideTimer=null;},400);}
-  zone.addEventListener('mouseenter',showBar);
-  wrapper.addEventListener('mouseenter',showBar);
-  zone.addEventListener('mouseleave',scheduleHide);
-  wrapper.addEventListener('mouseleave',scheduleHide);
-  wrapper.addEventListener('dragover',function(e){e.preventDefault();showBar();});
-  wrapper.addEventListener('drop',function(){setTimeout(scheduleHide,2000);});
-})();
 
 var paretoOptions=[];
 var renderTimer=null;
