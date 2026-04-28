@@ -357,7 +357,6 @@ var db=firebase.database();
 var fbSyncing=false;
 var fbLastKnownCount=0;
 
-/* Monitor connection */
 db.ref('.info/connected').on('value',function(snap){
   var el=document.getElementById('fbStatus');
   if(el){
@@ -366,7 +365,6 @@ db.ref('.info/connected').on('value',function(snap){
   }
 });
 
-/* == Toast notification == */
 function showToast(msg){
   var t=document.getElementById('fbToast');
   if(!t)return;
@@ -375,7 +373,7 @@ function showToast(msg){
   setTimeout(function(){t.classList.remove('show');},3000);
 }
 
-/* == FIREBASE: Save all rows == */
+/* SAVE ALL ROWS - with error handling and progress feedback */
 function saveAllToFirebase(){
   if(!allRows.length)return;
   var saveData=allRows.map(function(r,i){
@@ -383,35 +381,52 @@ function saveAllToFirebase(){
       pt:r.pmtTerms||'',du:r.dueDate||'',c:r.cur||'',ag:r.aging||'',p:r.pareto||'',
       t:r.text||'',co:r.corp||'',ct:r.ctrl||'',s:r.status||'',am:r.amt||0,sr:r.src||''};
   });
-  db.ref('dashboard/rows').set(saveData);
-  db.ref('dashboard/meta').set({
-    lastUpdatedBy:navigator.userAgent.substring(0,50),
-    lastUpdatedAt:new Date().toISOString(),
-    rowCount:allRows.length,
-    fileCount:loadedFiles.length
+  showToast('☁️ Saving '+allRows.length+' rows to cloud...');
+  db.ref('dashboard/rows').set(saveData).then(function(){
+    db.ref('dashboard/meta').set({
+      lastUpdatedBy:navigator.userAgent.substring(0,50),
+      lastUpdatedAt:new Date().toISOString(),
+      rowCount:allRows.length,
+      fileCount:loadedFiles.length
+    });
+    fbLastKnownCount=allRows.length;
+    showToast('✅ Saved '+allRows.length+' rows to cloud!');
+  }).catch(function(err){
+    console.error('Firebase save error:',err);
+    showToast('❌ Save failed: '+err.message);
   });
-  fbLastKnownCount=allRows.length;
 }
 
-/* == FIREBASE: Save single field change == */
+/* SAVE SINGLE FIELD - with error handling */
 function saveFieldToFirebase(rowIdx,field,value){
   var key=(field==='pareto')?'p':'s';
-  db.ref('dashboard/rows/'+rowIdx+'/'+key).set(value);
+  db.ref('dashboard/rows/'+rowIdx+'/'+key).set(value).catch(function(err){
+    console.error('Field save error:',err);
+    showToast('❌ Field save failed');
+  });
   db.ref('dashboard/meta/lastUpdatedAt').set(new Date().toISOString());
 }
 
-/* == FIREBASE: Load data from Firebase (handles both array and object) == */
+/* LOAD FROM FIREBASE - handles arrays AND objects, with error handling */
 function loadFromFirebase(callback){
-  db.ref('dashboard/rows').once('value',function(snap){
+  showToast('☁️ Loading from cloud...');
+  db.ref('dashboard/rows').once('value').then(function(snap){
     var data=snap.val();
-    if(!data){if(callback)callback(false);return;}
+    if(!data){showToast('ℹ️ No data in cloud yet');if(callback)callback(false);return;}
     /* Firebase converts arrays to objects with numeric keys - handle both */
     if(!Array.isArray(data)){
-      var arr=[];var keys=Object.keys(data);
-      for(var k=0;k<keys.length;k++){if(data[keys[k]])arr.push(data[keys[k]]);}
+      var arr=[];
+      if(typeof data==='object'){
+        var keys=Object.keys(data);
+        for(var k=0;k<keys.length;k++){
+          if(data[keys[k]])arr.push(data[keys[k]]);
+        }
+      }
       data=arr;
     }
-    if(!data.length){if(callback)callback(false);return;}
+    /* Filter out null/undefined entries (Firebase sparse arrays) */
+    data=data.filter(function(d){return d!==null&&d!==undefined;});
+    if(!data.length){showToast('ℹ️ No valid rows in cloud');if(callback)callback(false);return;}
     allRows=[];loadedFiles=[];srcChecked={};
     var fileSet={};
     data.forEach(function(d){
@@ -428,11 +443,16 @@ function loadFromFirebase(callback){
       srcChecked[fn]=true;
     });
     fbLastKnownCount=allRows.length;
+    showToast('✅ Loaded '+allRows.length+' rows from cloud!');
     if(callback)callback(true);
+  }).catch(function(err){
+    console.error('Firebase load error:',err);
+    showToast('❌ Load failed: '+err.message);
+    if(callback)callback(false);
   });
 }
 
-/* == FIREBASE: Silent background sync (no loading overlay) == */
+/* SILENT SYNC */
 function silentSync(){
   if(fbSyncing)return;
   fbSyncing=true;
@@ -440,14 +460,13 @@ function silentSync(){
     if(found){
       if(typeof deduplicateRows==='function'){var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;}
       try{finalizeLoad();}catch(e){console.warn('Silent sync error:',e);}
-      showToast('🔄 Data updated by another user');
+      showToast('🔄 Data synced from another user');
     }
-    /* Speed optimized: 1 second delay */
     setTimeout(function(){fbSyncing=false;},1000);
   });
 }
 
-/* == FIREBASE: Manual sync (with loading overlay) == */
+/* MANUAL SYNC */
 function syncFromFirebase(){
   fbSyncing=true;
   if(typeof showLoading==='function')showLoading('Syncing from cloud...','Fetching latest data...');
@@ -458,14 +477,12 @@ function syncFromFirebase(){
     }
     if(typeof setProgress==='function')setProgress(100,'Synced!');
     if(typeof hideLoading==='function')setTimeout(hideLoading,500);
-    /* Speed optimized: 1 second delay */
     setTimeout(function(){fbSyncing=false;},1000);
   });
 }
 
-/* == FIREBASE: Listen for real-time changes (auto-sync) == */
+/* LISTEN FOR REAL-TIME CHANGES */
 function listenForFieldChanges(){
-  /* Listen for individual field changes (Status/Pareto) */
   db.ref('dashboard/rows').on('child_changed',function(snap){
     if(fbSyncing)return;
     var idx=parseInt(snap.key);
@@ -479,7 +496,6 @@ function listenForFieldChanges(){
       showToast('🟢 Status/Pareto updated');
     }
   });
-  /* Listen for new data uploads (row count changed = someone uploaded new file) */
   db.ref('dashboard/meta/rowCount').on('value',function(snap){
     var rc=snap.val();
     if(rc&&rc!==fbLastKnownCount&&dataLoaded&&!fbSyncing){
@@ -488,7 +504,6 @@ function listenForFieldChanges(){
   });
 }
 
-/* == Auto-save when closing browser (safety net) == */
 window.addEventListener('beforeunload',function(){
   if(dataLoaded&&allRows.length>0)saveAllToFirebase();
 });
@@ -1389,7 +1404,7 @@ function toggleSummary(){
 
 
 
-/* == FIREBASE: Silent auto-load on page open == */
+/* == FIREBASE: Silent auto-load == */
 (function(){
   fbSyncing=true;
   loadFromFirebase(function(found){
@@ -1397,7 +1412,6 @@ function toggleSummary(){
       if(typeof deduplicateRows==='function'){var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;}
       try{finalizeLoad();}catch(e){console.warn('Auto-load error:',e);}
     }
-    /* Speed optimized: 1 second delay before starting listeners */
     setTimeout(function(){
       fbSyncing=false;
       listenForFieldChanges();
