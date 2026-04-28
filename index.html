@@ -755,15 +755,22 @@ function finalizeLoad(){
   populateDropdown('fPareto',paretoOptions,'All Pareto','ALL');
   /* build controller → corp group mapping */
   var ctrlCorpMap={};
+  var ctrlParetoMap={};
   for(var j=0;j<allRows.length;j++){
     var rr=allRows[j];
     if(rr.ctrl&&rr.ctrl.trim()&&rr.corp&&rr.corp!=='Corp Group'&&rr.corp!=='HFM Named Client'){
       if(!ctrlCorpMap[rr.ctrl])ctrlCorpMap[rr.ctrl]={};
       ctrlCorpMap[rr.ctrl][rr.corp]=1;
     }
+    if(rr.ctrl&&rr.ctrl.trim()&&rr.pareto&&rr.pareto!=='Pareto'){
+      if(!ctrlParetoMap[rr.ctrl])ctrlParetoMap[rr.ctrl]={};
+      ctrlParetoMap[rr.ctrl][rr.pareto]=1;
+    }
   }
   window._ctrlCorpMap=ctrlCorpMap;
+  window._ctrlParetoMap=ctrlParetoMap;
   window._allCorpGroups=Object.keys(cs).sort();
+  window._allParetoOptions=paretoOptions.slice();
   populateDropdown('fCorp',Object.keys(cs).sort(),'All','ALL');
   populateDropdown('fCtrl',Object.keys(ctrls).sort(),'All Controller','ALL');
   populateDropdown('fCur',Object.keys(curs).sort(),'All','ALL');
@@ -1283,17 +1290,27 @@ function applyFilters(){scheduleRender();}
 function onCtrlChange(){
   var ctrl=document.getElementById('fCtrl').value;
   var corpSel=document.getElementById('fCorp');
+  var paretoSel=document.getElementById('fPareto');
   var curCorp=corpSel.value;
+  var curPareto=paretoSel.value;
   if(ctrl==='ALL'){
     populateDropdown('fCorp',window._allCorpGroups||[],'All','ALL');
+    populateDropdown('fPareto',window._allParetoOptions||paretoOptions,'All Pareto','ALL');
   }else{
     var corps=window._ctrlCorpMap&&window._ctrlCorpMap[ctrl]?Object.keys(window._ctrlCorpMap[ctrl]).sort():[];
     populateDropdown('fCorp',corps,'All','ALL');
+    var paretos=window._ctrlParetoMap&&window._ctrlParetoMap[ctrl]?Object.keys(window._ctrlParetoMap[ctrl]).sort():[];
+    populateDropdown('fPareto',paretos,'All Pareto','ALL');
   }
   if(curCorp!=='ALL'){
     var opts=Array.from(corpSel.options).map(function(o){return o.value;});
     if(opts.indexOf(curCorp)>-1)corpSel.value=curCorp;
     else corpSel.value='ALL';
+  }
+  if(curPareto!=='ALL'){
+    var pOpts=Array.from(paretoSel.options).map(function(o){return o.value;});
+    if(pOpts.indexOf(curPareto)>-1)paretoSel.value=curPareto;
+    else paretoSel.value='ALL';
   }
   applyFilters();
 }
