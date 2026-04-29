@@ -211,6 +211,9 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 .mu-result .mu-ok{color:#9BE79B;font-weight:bold;}
 .mu-result .mu-skip{color:#C55A11;}
 .mu-close{background:#7B6A2E;color:#fff;border:1px solid #c8b06a;border-radius:20px;padding:6px 18px;font-size:11px;font-weight:bold;cursor:pointer;margin-top:12px;}
+.online-badge{display:inline-flex;align-items:center;gap:4px;background:#5a4a1e;color:#FFD700;border:1px solid #c8b06a;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:bold;margin-left:6px;vertical-align:middle;}
+.online-badge .ob-dot{width:7px;height:7px;border-radius:50%;background:#00E676;display:inline-block;animation:obPulse 1.5s infinite;}
+@keyframes obPulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 </style>
 </head>
@@ -281,6 +284,7 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
     </div>
     <button onclick="resetFilters()">&#8635; Reset All</button>
     <button id="saveBtn" onclick="saveEdits()" disabled style="background:#1F4E79;color:#fff;border:none;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:bold;cursor:pointer;opacity:0.5;">💾 Save</button>
+    <span class="online-badge" id="onlineBadge"><span class="ob-dot"></span> <span id="onlineCount">0</span> online</span>
     <button onclick="downloadExcel()" style="background:#00B050;color:#fff;border:none;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:bold;cursor:pointer;">⬇ Download</button>
     <button onclick="document.getElementById('muOverlay').classList.add('show')" style="background:#1F4E79;color:#fff;border:none;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:bold;cursor:pointer;">📥 Mass Update</button>
     <button class="eye-toggle" id="eyeToggle" onclick="toggleSummary()" title="Show/Hide Summary">
@@ -389,12 +393,13 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 <div class="mu-overlay" id="muOverlay">
   <div class="mu-dialog">
     <div class="mu-title">📥 Mass Update Pareto & Status</div>
-    <div class="mu-sub">Upload an Excel file to bulk-update Pareto and Status.<br>Matches by <b>Reference Doc No</b> or <b>Assignment Number</b>. Original data is not replaced.</div>
+    <div class="mu-sub">Upload an Excel file to bulk-update Pareto and Status.<br>Matches by <b>Reference Doc No</b> (priority) or <b>Assignment Number</b> (fallback). Original data is not replaced.</div>
     <div class="mu-cols">
       <b>Required columns in your Excel:</b><br>
       • <b>Reference Doc No</b> or <b>Assignment Number</b> (for matching)<br>
       • <b>Pareto</b> (optional — updates Pareto if present)<br>
-      • <b>Status</b> (optional — updates Status if present)
+      • <b>Status</b> (optional — updates Status if present)<br>
+      <b>Note:</b> Empty cells are skipped (existing values kept).
     </div>
     <input type="file" id="muFileInput" accept=".xlsx,.xls,.xlsm,.csv" style="display:none">
     <button class="mu-upload-btn" onclick="document.getElementById('muFileInput').click()">📂 Choose Update File</button>
@@ -483,15 +488,16 @@ function processMassUpdate(wb){
     var newPar=cPar>=0?String(row[cPar]||'').trim():'';
     var newSta=cSta>=0?String(row[cSta]||'').trim():'';
     if(!refVal&&!asnVal){skipped++;continue;}
+    if(!newPar&&!newSta){skipped++;continue;}
     var matches=[];
     if(refVal){var rk=refVal.toLowerCase();if(refMap[rk])matches=matches.concat(refMap[rk]);}
-    if(asnVal){var ak=asnVal.toLowerCase();if(asnMap[ak])matches=matches.concat(asnMap[ak]);}
+    if(matches.length===0&&asnVal){var ak=asnVal.toLowerCase();if(asnMap[ak])matches=matches.concat(asnMap[ak]);}
     var seen={};matches=matches.filter(function(idx){if(seen[idx])return false;seen[idx]=1;return true;});
     if(matches.length===0){skipped++;log.push('<span class="mu-skip">\u2716 '+(refVal||asnVal)+' \u2014 no match</span>');continue;}
     for(var mi=0;mi<matches.length;mi++){
       var idx=matches[mi];var changed=false;
-      if(cPar>=0&&allRows[idx].pareto!==newPar){allRows[idx].pareto=newPar;changed=true;}
-      if(cSta>=0&&allRows[idx].status!==newSta){allRows[idx].status=newSta;changed=true;}
+      if(cPar>=0&&newPar&&allRows[idx].pareto!==newPar){allRows[idx].pareto=newPar;changed=true;}
+      if(cSta>=0&&newSta&&allRows[idx].status!==newSta){allRows[idx].status=newSta;changed=true;}
       if(changed){updated++;fbBatch[idx+'/p']=allRows[idx].pareto;fbBatch[idx+'/s']=allRows[idx].status;}
     }
     log.push('<span class="mu-ok">\u2714 '+(refVal||asnVal)+' \u2192 '+matches.length+' row(s)</span>');
@@ -529,6 +535,25 @@ firebase.initializeApp(firebaseConfig);
 var db=firebase.database();
 var fbSyncing=false;
 var fbLastKnownCount=0;
+
+/* === USERS ONLINE - Firebase Presence === */
+var myPresenceRef=null;
+var mySessionId='s_'+Math.random().toString(36).substr(2,9)+'_'+Date.now();
+db.ref('.info/connected').on('value',function(snap){
+  if(snap.val()===true){
+    myPresenceRef=db.ref('dashboard/presence/'+mySessionId);
+    myPresenceRef.set({t:Date.now()});
+    myPresenceRef.onDisconnect().remove();
+  }
+});
+db.ref('dashboard/presence').on('value',function(snap){
+  var count=snap.numChildren();
+  var el=document.getElementById('onlineCount');
+  if(el)el.textContent=count;
+});
+window.addEventListener('beforeunload',function(){
+  if(myPresenceRef)myPresenceRef.remove();
+});
 
 db.ref('.info/connected').on('value',function(snap){
   var el=document.getElementById('fbStatus');
