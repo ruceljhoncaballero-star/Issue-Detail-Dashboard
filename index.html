@@ -180,14 +180,10 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 .fb-toast.show{opacity:1;transform:translateY(0);}
 
 /* ═══════ AUTO-HIDE UPLOAD BAR ═══════ */
-.upload-wrapper{
-  max-height:5px;overflow:hidden;opacity:0.15;
-  transition:max-height .35s ease, opacity .25s ease;
-  border-top:3px solid #c8b06a;background:#f9f3e0;
-}
+.upload-wrapper{max-height:5px;overflow:hidden;opacity:0.15;transition:max-height .35s ease, opacity .25s ease;border-top:3px solid #c8b06a;background:#f9f3e0;}
 .upload-wrapper:hover{max-height:60px;overflow:visible;opacity:1;}
 
-/* ═══════ CONFIRM DIALOG (themed) ═══════ */
+/* ═══════ CONFIRM DIALOG ═══════ */
 .confirm-overlay{position:fixed;inset:0;background:rgba(74,60,16,.75);z-index:20000;display:none;align-items:center;justify-content:center;}
 .confirm-overlay.show{display:flex;}
 .confirm-dialog{background:#4a3c10;border:2px solid #c8b06a;border-radius:14px;padding:24px 28px;width:370px;max-width:90vw;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:cdFadeIn .2s ease;}
@@ -207,6 +203,21 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 .conv-bar .lbl{color:#FFD700;font-weight:bold;font-size:11px;white-space:nowrap;flex-shrink:0;}
 .conv-bar span.conv-item{font-weight:bold;font-size:11px;background:#5a4a1e;padding:3px 10px;border-radius:6px;border:1px solid #c8b06a;white-space:nowrap;}
 .conv-bar span.conv-item b{color:#FFD700;}
+
+/* ═══════ MASS UPDATE MODAL ═══════ */
+.mu-overlay{position:fixed;inset:0;background:rgba(74,60,16,.75);z-index:20000;display:none;align-items:center;justify-content:center;}
+.mu-overlay.show{display:flex;}
+.mu-dialog{background:#4a3c10;border:2px solid #c8b06a;border-radius:14px;padding:24px 28px;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:cdFadeIn .2s ease;}
+.mu-dialog .mu-title{font-size:16px;font-weight:bold;color:#FFD700;margin-bottom:4px;}
+.mu-dialog .mu-sub{font-size:11px;color:#e0d5b8;margin-bottom:14px;}
+.mu-dialog .mu-cols{font-size:10px;color:#c8b06a;margin-bottom:12px;text-align:left;background:#5a4a1e;padding:8px 12px;border-radius:8px;border:1px solid #c8b06a;}
+.mu-dialog .mu-cols b{color:#FFD700;}
+.mu-upload-btn{background:#FFD700;color:#4a3c10;border:none;border-radius:20px;padding:8px 24px;font-size:12px;font-weight:bold;cursor:pointer;margin-bottom:10px;}
+.mu-upload-btn:hover{filter:brightness(1.1);}
+.mu-result{font-size:11px;color:#e0d5b8;margin-top:10px;text-align:left;max-height:200px;overflow-y:auto;}
+.mu-result .mu-ok{color:#9BE79B;font-weight:bold;}
+.mu-result .mu-skip{color:#C55A11;}
+.mu-close{background:#7B6A2E;color:#fff;border:1px solid #c8b06a;border-radius:20px;padding:6px 18px;font-size:11px;font-weight:bold;cursor:pointer;margin-top:12px;}
 
 </style>
 </head>
@@ -278,6 +289,7 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
     <button onclick="resetFilters()">&#8635; Reset All</button>
     <button id="saveBtn" onclick="saveEdits()" disabled style="background:#1F4E79;color:#fff;border:none;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:bold;cursor:pointer;opacity:0.5;">💾 Save</button>
     <button onclick="downloadExcel()" style="background:#00B050;color:#fff;border:none;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:bold;cursor:pointer;">⬇ Download</button>
+    <button onclick="document.getElementById('muOverlay').classList.add('show')" style="background:#1F4E79;color:#fff;border:none;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:bold;cursor:pointer;">📥 Mass Update</button>
     <button class="eye-toggle" id="eyeToggle" onclick="toggleSummary()" title="Show/Hide Summary">
       <span id="eyeIcon"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></span> Summary
     </button>
@@ -381,6 +393,22 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
     </div>
   </div>
 </div>
+<div class="mu-overlay" id="muOverlay">
+  <div class="mu-dialog">
+    <div class="mu-title">📥 Mass Update Pareto & Status</div>
+    <div class="mu-sub">Upload an Excel file to bulk-update Pareto and Status.<br>Matches by <b>Reference Doc No</b> or <b>Assignment Number</b>. Original data is not replaced.</div>
+    <div class="mu-cols">
+      <b>Required columns in your Excel:</b><br>
+      • <b>Reference Doc No</b> or <b>Assignment Number</b> (for matching)<br>
+      • <b>Pareto</b> (optional — updates Pareto if present)<br>
+      • <b>Status</b> (optional — updates Status if present)
+    </div>
+    <input type="file" id="muFileInput" accept=".xlsx,.xls,.xlsm,.csv" style="display:none">
+    <button class="mu-upload-btn" onclick="document.getElementById('muFileInput').click()">📂 Choose Update File</button>
+    <div class="mu-result" id="muResult"></div>
+    <button class="mu-close" id="muClose">Close</button>
+  </div>
+</div>
 
 <script>
 var allRows=[],loadedFiles=[],colFilters={},clientTags=[],srcChecked={},totalDups=0,dataLoaded=false,hasEdits=false;
@@ -404,8 +432,129 @@ document.getElementById('confirmOverlay').addEventListener('click',function(e){
   if(e.target===this){this.classList.remove('show');pendingRemoveFile=null;}
 });
 
-/* ═══ EDITING FLAG — prevents re-render during cell editing ═══ */
+/* ═══ EDITING FLAG ═══ */
 var isEditing=false;
+
+/* ═══ MASS UPDATE — BATCH (no page freeze) ═══ */
+document.getElementById('muClose').addEventListener('click',function(){
+  document.getElementById('muOverlay').classList.remove('show');
+});
+document.getElementById('muOverlay').addEventListener('click',function(e){
+  if(e.target===this)this.classList.remove('show');
+});
+document.getElementById('muFileInput').addEventListener('change',function(e){
+  var file=e.target.files[0];
+  if(!file)return;
+  e.target.value='';
+  var resEl=document.getElementById('muResult');
+  resEl.innerHTML='<b style="color:#FFD700;">Processing...</b>';
+  var ext=file.name.split('.').pop().toLowerCase();
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var wb;
+      if(ext==='csv')wb=XLSX.read(ev.target.result,{type:'string',raw:false});
+      else wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+      /* defer to let "Processing..." render */
+      setTimeout(function(){processMassUpdate(wb,file.name);},50);
+    }catch(err){
+      resEl.innerHTML='<span class="mu-skip">Error: '+err.message+'</span>';
+    }
+  };
+  if(ext==='csv')reader.readAsText(file);
+  else reader.readAsArrayBuffer(file);
+});
+
+function processMassUpdate(wb,fileName){
+  var resEl=document.getElementById('muResult');
+  var sn=wb.SheetNames[0];
+  var data=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:false});
+  if(!data||data.length<2){resEl.innerHTML='<span class="mu-skip">File is empty.</span>';return;}
+
+  var hdrs=data[0].map(function(c){return String(c||'').trim().toLowerCase();});
+  function findCol(kws){
+    for(var k=0;k<kws.length;k++)
+      for(var j=0;j<hdrs.length;j++)
+        if(hdrs[j].indexOf(kws[k])>-1)return j;
+    return -1;
+  }
+  var cRef=findCol(['ref doc','reference doc','invoice no','invoice number','document no','doc no']);
+  var cAsn=findCol(['assignment number','assignment no','assignment id','asn no']);
+  var cPar=findCol(['pareto']);
+  var cSta=-1;
+  for(var s=hdrs.length-1;s>=0;s--){if(hdrs[s].indexOf('status')>-1){cSta=s;break;}}
+
+  if(cRef<0&&cAsn<0){resEl.innerHTML='<span class="mu-skip">No Reference Doc No or Assignment Number column found.</span>';return;}
+  if(cPar<0&&cSta<0){resEl.innerHTML='<span class="mu-skip">No Pareto or Status column found.</span>';return;}
+
+  /* Build lookup maps */
+  var refMap={},asnMap={};
+  for(var m=0;m<allRows.length;m++){
+    var rr=allRows[m];
+    if(rr.ref){var k=rr.ref.trim().toLowerCase();if(!refMap[k])refMap[k]=[];refMap[k].push(m);}
+    if(rr.assign){var a=rr.assign.trim().toLowerCase();if(!asnMap[a])asnMap[a]=[];asnMap[a].push(m);}
+  }
+
+  var updated=0,skipped=0,log=[],fbBatch={};
+  for(var r=1;r<data.length;r++){
+    var row=data[r];
+    var refVal=cRef>=0?String(row[cRef]||'').trim():'';
+    var asnVal=cAsn>=0?String(row[cAsn]||'').trim():'';
+    var newPar=cPar>=0?String(row[cPar]||'').trim():'';
+    var newSta=cSta>=0?String(row[cSta]||'').trim():'';
+    if(!refVal&&!asnVal){skipped++;continue;}
+    if(!newPar&&!newSta){skipped++;continue;}
+
+    var matches=[];
+    if(refVal){var rk=refVal.toLowerCase();if(refMap[rk])matches=matches.concat(refMap[rk]);}
+    if(asnVal&&matches.length===0){var ak=asnVal.toLowerCase();if(asnMap[ak])matches=matches.concat(asnMap[ak]);}
+    if(matches.length===0){skipped++;log.push('<span class="mu-skip">\u2716 '+(refVal||asnVal)+' — no match</span>');continue;}
+
+    /* Deduplicate */
+    var seen={};
+    matches=matches.filter(function(idx){if(seen[idx])return false;seen[idx]=1;return true;});
+
+    for(var mi=0;mi<matches.length;mi++){
+      var idx=matches[mi];
+      var changed=false;
+      if(newPar&&allRows[idx].pareto!==newPar){allRows[idx].pareto=newPar;changed=true;}
+      if(newSta&&allRows[idx].status!==newSta){allRows[idx].status=newSta;changed=true;}
+      if(changed){
+        updated++;
+        /* Collect for batch Firebase write */
+        fbBatch[idx+'/p']=allRows[idx].pareto;
+        fbBatch[idx+'/s']=allRows[idx].status;
+      }
+    }
+    log.push('<span class="mu-ok">\u2714 '+(refVal||asnVal)+' \u2192 '+matches.length+' row(s) updated</span>');
+  }
+
+  /* Update pareto dropdown */
+  for(var pi=0;pi<allRows.length;pi++){
+    var pv=allRows[pi].pareto;
+    if(pv&&paretoOptions.indexOf(pv)<0)paretoOptions.push(pv);
+  }
+  paretoOptions.sort();
+  populateDropdown('fPareto',paretoOptions,'All Pareto','ALL');
+  populateDropdown('colParetoFilter',paretoOptions,'All','');
+
+  hasEdits=true;var sb=document.getElementById('saveBtn');if(sb){sb.disabled=false;sb.style.opacity='1';}
+  renderTable();
+
+  /* ONE batch Firebase write instead of thousands */
+  var batchKeys=Object.keys(fbBatch);
+  if(batchKeys.length>0){
+    db.ref('dashboard/rows').update(fbBatch).then(function(){
+      db.ref('dashboard/meta/lastUpdatedAt').set(new Date().toISOString());
+      showToast('\u2601\ufe0f Saved '+updated+' updates to cloud');
+    }).catch(function(err){
+      console.error('Batch save error:',err);
+      showToast('\u274c Cloud save failed');
+    });
+  }
+
+  resEl.innerHTML='<b style="color:#FFD700;">\u2705 Done!</b> Updated: <b style="color:#9BE79B;">'+updated+'</b> | Skipped: <b style="color:#C55A11;">'+skipped+'</b> | Rows in file: '+(data.length-1)+'<br><br>'+log.slice(0,100).join('<br>')+(log.length>100?'<br>... and '+(log.length-100)+' more':'');
+}
 
 var paretoOptions=[];
 var renderTimer=null;
@@ -941,14 +1090,14 @@ function navigateEditable(currentTd, forward){
   var rows=Array.from(tbody.querySelectorAll('tr'));
   if(!rows.length)return;
   var currentRow=currentTd.parentElement;
-  var currentCol=(currentTd===currentRow.querySelectorAll('td')[14])?14:15;
+  var currentCol=parseInt(currentTd.getAttribute('data-col'))||14;
   var rowIdx=rows.indexOf(currentRow);
-  if(rowIdx<0)return;
+  if(rowIdx<0){isEditing=false;return;}
   var targetRow=rowIdx,targetCol=currentCol;
   if(forward){if(currentCol===14){targetCol=15;}else{targetCol=14;targetRow=rowIdx+1;}}
   else{if(currentCol===15){targetCol=14;}else{targetCol=15;targetRow=rowIdx-1;}}
   if(targetRow<0||targetRow>=rows.length){isEditing=false;return;}
-  var targetTd=rows[targetRow].querySelectorAll('td')[targetCol];
+  var targetTd=rows[targetRow].querySelector('td[data-col="'+targetCol+'"]');
   if(!targetTd){isEditing=false;return;}
   targetTd.scrollIntoView({block:'nearest',inline:'nearest'});
   setTimeout(function(){targetTd.click();},50);
@@ -966,6 +1115,7 @@ function updateRowPaidClass(tr,rowIdx){
 function makeEditablePareto(td,rowIdx){
   td.className='free-edit-cell pareto-cell-wrap';
   td.title='Click to edit Pareto';
+  td.setAttribute('data-col','14');
   td.innerHTML=esc(allRows[rowIdx].pareto);
   td.onclick=function(e){
     e.stopPropagation();
@@ -973,18 +1123,12 @@ function makeEditablePareto(td,rowIdx){
     isEditing=true;
     var cur=allRows[rowIdx].pareto;
     var inp=document.createElement('input');
-    inp.type='text';
-    inp.value=cur;
-    inp.placeholder='Enter pareto...';
+    inp.type='text';inp.value=cur;inp.placeholder='Enter pareto...';
     function save(){
       isEditing=false;
       var v=inp.value.trim();
       allRows[rowIdx].pareto=v;
-      if(v&&paretoOptions.indexOf(v)<0){
-        paretoOptions.push(v);paretoOptions.sort();
-        populateDropdown('fPareto',paretoOptions,'All Pareto','ALL');
-        populateDropdown('colParetoFilter',paretoOptions,'All','');
-      }
+      if(v&&paretoOptions.indexOf(v)<0){paretoOptions.push(v);paretoOptions.sort();populateDropdown('fPareto',paretoOptions,'All Pareto','ALL');populateDropdown('colParetoFilter',paretoOptions,'All','');}
       td.innerHTML=esc(v);
       hasEdits=true;var sb=document.getElementById('saveBtn');if(sb){sb.disabled=false;sb.style.opacity='1';}
       makeEditablePareto(td,rowIdx);
@@ -996,17 +1140,13 @@ function makeEditablePareto(td,rowIdx){
       if(ev.key==='Enter'){ev.preventDefault();inp.blur();}
       if(ev.key==='Escape'){inp.value=cur;inp.blur();}
       if(ev.key==='Tab'){
-        ev.preventDefault();
-        var fwd=!ev.shiftKey;
-        var v=inp.value.trim();
-        allRows[rowIdx].pareto=v;
+        ev.preventDefault();var fwd=!ev.shiftKey;
+        var v=inp.value.trim();allRows[rowIdx].pareto=v;
         if(v&&paretoOptions.indexOf(v)<0){paretoOptions.push(v);paretoOptions.sort();populateDropdown('fPareto',paretoOptions,'All Pareto','ALL');populateDropdown('colParetoFilter',paretoOptions,'All','');}
         saveFieldToFirebase(rowIdx,'pareto',v);
         hasEdits=true;var sb=document.getElementById('saveBtn');if(sb){sb.disabled=false;sb.style.opacity='1';}
-        td.innerHTML=esc(v);
-        makeEditablePareto(td,rowIdx);
-        updateRowPaidClass(td.parentElement,rowIdx);
-        navigateEditable(td,fwd);
+        td.innerHTML=esc(v);inp.blur();
+        setTimeout(function(){makeEditablePareto(td,rowIdx);updateRowPaidClass(td.parentElement,rowIdx);navigateEditable(td,fwd);},0);
       }
     };
     td.innerHTML='';td.appendChild(inp);inp.focus();inp.select();
@@ -1018,6 +1158,7 @@ function makeEditableStatus(td,rowIdx){
   var sc=getStatusClass(allRows[rowIdx].status);
   td.className=sc+' free-edit-cell status-cell-wrap';
   td.title='Click to edit Status / Comments freely';
+  td.setAttribute('data-col','15');
   td.innerHTML=esc(allRows[rowIdx].status);
   td.onclick=function(e){
     e.stopPropagation();
@@ -1025,13 +1166,10 @@ function makeEditableStatus(td,rowIdx){
     isEditing=true;
     var cur=allRows[rowIdx].status;
     var ta=document.createElement('textarea');
-    ta.value=cur;
-    ta.rows=3;
-    ta.placeholder='Type status or comments...';
+    ta.value=cur;ta.rows=3;ta.placeholder='Type status or comments...';
     function save(){
       isEditing=false;
-      var v=ta.value.trim();
-      allRows[rowIdx].status=v;
+      var v=ta.value.trim();allRows[rowIdx].status=v;
       td.innerHTML=esc(v);
       hasEdits=true;var sb2=document.getElementById('saveBtn');if(sb2){sb2.disabled=false;sb2.style.opacity='1';}
       makeEditableStatus(td,rowIdx);
@@ -1043,19 +1181,12 @@ function makeEditableStatus(td,rowIdx){
       if(ev.key==='Escape'){ta.value=cur;ta.blur();}
       if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();ta.blur();}
       if(ev.key==='Tab'){
-        ev.preventDefault();
-        var fwd=!ev.shiftKey;
-        var v=ta.value.trim();
-        allRows[rowIdx].status=v;
+        ev.preventDefault();var fwd=!ev.shiftKey;
+        var v=ta.value.trim();allRows[rowIdx].status=v;
         saveFieldToFirebase(rowIdx,'status',v);
         hasEdits=true;var sb2=document.getElementById('saveBtn');if(sb2){sb2.disabled=false;sb2.style.opacity='1';}
-        td.innerHTML=esc(v);
-        ta.blur();
-        setTimeout(function(){
-          makeEditableStatus(td,rowIdx);
-          updateRowPaidClass(td.parentElement,rowIdx);
-          navigateEditable(td,fwd);
-        },0);
+        td.innerHTML=esc(v);ta.blur();
+        setTimeout(function(){makeEditableStatus(td,rowIdx);updateRowPaidClass(td.parentElement,rowIdx);navigateEditable(td,fwd);},10);
       }
     };
     td.innerHTML='';td.appendChild(ta);ta.focus();ta.select();
