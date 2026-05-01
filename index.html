@@ -163,21 +163,17 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
 /* ── FREE-TEXT EDITABLE CELLS ── */
 .free-edit-cell{
   cursor:text;
-  position:relative;
   min-width:80px;
   white-space:normal;
   word-break:break-word;
+  overflow:hidden;
 }
-.free-edit-cell:hover::after{
-  content:' ✎';
-  font-size:10px;
-  color:#7B6A2E;
-  opacity:.7;
-}
+.free-edit-cell:hover::after{content:none;}
 .free-edit-cell input,
 .free-edit-cell textarea{
+  box-sizing:border-box;
   width:100%;
-  min-width:120px;
+  min-width:0;
   border:1px solid #7B6A2E;
   border-radius:3px;
   font-size:11px;
@@ -185,10 +181,12 @@ table.main-tbl tbody td{padding:3px 6px;border:1px solid #e8e8e8;font-size:11px;
   padding:2px 4px;
   background:#fffde7;
   outline:none;
-  resize:vertical;
+  resize:none;
 }
 .pareto-cell-wrap{
   min-width:80px;
+  max-width:160px;
+  overflow:hidden;
 }
 .status-cell-wrap{
   min-width:140px;
@@ -1193,14 +1191,16 @@ function makeEditablePareto(td,rowIdx){
   td.innerHTML=esc(allRows[rowIdx].pareto);
   td.onclick=function(e){
     e.stopPropagation();
-    if(td.querySelector('input'))return;
+    if(td.querySelector('textarea'))return;
     isEditing=true;
     var cur=allRows[rowIdx].pareto;
-    var inp=document.createElement('input');
-    inp.type='text';inp.value=cur;inp.placeholder='Enter pareto...';
+    var ta=document.createElement('textarea');
+    ta.value=cur;ta.rows=2;ta.placeholder='Enter pareto...';
+    var _tabbing=false;
     function save(){
+      if(_tabbing)return;
       isEditing=false;
-      var v=inp.value.trim();allRows[rowIdx].pareto=v;
+      var v=ta.value.trim();allRows[rowIdx].pareto=v;
       if(v&&paretoOptions.indexOf(v)<0){paretoOptions.push(v);paretoOptions.sort();populateDropdown('fPareto',paretoOptions,'All Pareto','ALL');populateDropdown('colParetoFilter',paretoOptions,'All','');}
       td.innerHTML=esc(v);
       hasEdits=true;var sb=document.getElementById('saveBtn');if(sb){sb.disabled=false;sb.style.opacity='1';}
@@ -1208,21 +1208,23 @@ function makeEditablePareto(td,rowIdx){
       saveFieldToFirebase(rowIdx,'pareto',v);
       updateRowPaidClass(td.parentElement,rowIdx);
     }
-    inp.onblur=save;
-    inp.onkeydown=function(ev){
-      if(ev.key==='Enter'){ev.preventDefault();inp.blur();}
-      if(ev.key==='Escape'){inp.value=cur;inp.blur();}
+    ta.onblur=save;
+    ta.onkeydown=function(ev){
+      if(ev.key==='Escape'){ev.preventDefault();ta.value=cur;_tabbing=false;isEditing=false;td.innerHTML=esc(cur);makeEditablePareto(td,rowIdx);return;}
       if(ev.key==='Tab'){
-        ev.preventDefault();var fwd=!ev.shiftKey;
-        var v=inp.value.trim();allRows[rowIdx].pareto=v;
+        ev.preventDefault();_tabbing=true;var fwd=!ev.shiftKey;
+        var v=ta.value.trim();allRows[rowIdx].pareto=v;
         if(v&&paretoOptions.indexOf(v)<0){paretoOptions.push(v);paretoOptions.sort();populateDropdown('fPareto',paretoOptions,'All Pareto','ALL');populateDropdown('colParetoFilter',paretoOptions,'All','');}
         saveFieldToFirebase(rowIdx,'pareto',v);
         hasEdits=true;var sb=document.getElementById('saveBtn');if(sb){sb.disabled=false;sb.style.opacity='1';}
-        td.innerHTML=esc(v);inp.blur();
-        setTimeout(function(){makeEditablePareto(td,rowIdx);updateRowPaidClass(td.parentElement,rowIdx);navigateEditable(td,fwd);},0);
+        td.innerHTML=esc(v);
+        isEditing=false;
+        makeEditablePareto(td,rowIdx);updateRowPaidClass(td.parentElement,rowIdx);
+        setTimeout(function(){navigateEditable(td,fwd);},0);
+        return;
       }
     };
-    td.innerHTML='';td.appendChild(inp);inp.focus();inp.select();
+    td.innerHTML='';td.appendChild(ta);ta.focus();ta.select();
   };
 }
 
@@ -1240,7 +1242,9 @@ function makeEditableStatus(td,rowIdx){
     var cur=allRows[rowIdx].status;
     var ta=document.createElement('textarea');
     ta.value=cur;ta.rows=3;ta.placeholder='Type status or comments...';
+    var _tabbing=false;
     function save(){
+      if(_tabbing)return;
       isEditing=false;
       var v=ta.value.trim();allRows[rowIdx].status=v;
       td.innerHTML=esc(v);
@@ -1251,15 +1255,17 @@ function makeEditableStatus(td,rowIdx){
     }
     ta.onblur=save;
     ta.onkeydown=function(ev){
-      if(ev.key==='Escape'){ta.value=cur;ta.blur();}
-      if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();ta.blur();}
+      if(ev.key==='Escape'){ev.preventDefault();ta.value=cur;_tabbing=false;isEditing=false;td.innerHTML=esc(cur);makeEditableStatus(td,rowIdx);return;}
       if(ev.key==='Tab'){
-        ev.preventDefault();var fwd=!ev.shiftKey;
+        ev.preventDefault();_tabbing=true;var fwd=!ev.shiftKey;
         var v=ta.value.trim();allRows[rowIdx].status=v;
         saveFieldToFirebase(rowIdx,'status',v);
         hasEdits=true;var sb2=document.getElementById('saveBtn');if(sb2){sb2.disabled=false;sb2.style.opacity='1';}
-        td.innerHTML=esc(v);ta.blur();
-        setTimeout(function(){makeEditableStatus(td,rowIdx);updateRowPaidClass(td.parentElement,rowIdx);navigateEditable(td,fwd);},10);
+        td.innerHTML=esc(v);
+        isEditing=false;
+        makeEditableStatus(td,rowIdx);updateRowPaidClass(td.parentElement,rowIdx);
+        setTimeout(function(){navigateEditable(td,fwd);},0);
+        return;
       }
     };
     td.innerHTML='';td.appendChild(ta);ta.focus();ta.select();
