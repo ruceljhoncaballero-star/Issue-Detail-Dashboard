@@ -299,7 +299,7 @@ table.main-tbl tbody td.amt-neg,table.main-tbl tbody td.amt-neg *{color:#FF0000 
  <option value="31-60">31-60</option>
  <option value="61-90">61-90</option>
  <option value="91-120">91-120</option>
- <option value="120 +">120+</option>
+ <option value="120+">120+</option>
  </select>
  <label>Currency:</label>
  <select id="fCur" onchange="applyFilters()"><option value="ALL">All</option></select>
@@ -1264,11 +1264,11 @@ function getFilteredRows(){
  var r=allRows[i];
  if(srcChecked[r.src]===false)continue;
  var pt=(corp==='ALL'||r.corp===corp)&&(par==='ALL'||r.pareto===par)
- &&(ctrl==='ALL'||r.ctrl===ctrl)&&(age==='ALL'||r.aging===age)&&(cur==='ALL'||r.cur===cur);
+ &&(ctrl==='ALL'||r.ctrl===ctrl)&&(age==='ALL'||calcAgingBucket(r.dueDate)===age)&&(cur==='ALL'||r.cur===cur);
  var pg=clientTags.length===0||clientTags.some(function(t){return r.name.toLowerCase().indexOf(t)>-1||r.uniqueRef.toLowerCase().indexOf(t)>-1||r.ref.toLowerCase().indexOf(t)>-1||r.assign.toLowerCase().indexOf(t)>-1;});
  if(!pt||!pg)continue;
  var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;
- switch(r.aging){
+ switch(calcAgingBucket(r.dueDate)){
  case 'Current':aC=r.amt;break;case '0-30':a0=r.amt;break;
  case '31-60':a3=r.amt;break;case '61-90':a6=r.amt;break;
  case '91-120':a9=r.amt;break;case '120 +':case '120+':a1=r.amt;break;
@@ -1319,7 +1319,7 @@ function downloadExcel() {
  function statusStyle(sv){var sl=(sv||'').toLowerCase(),bg='FFFFFF',fc='333333';if(sl.indexOf('write off')>-1||sl.indexOf('writeoff')>-1){bg='EDEDED';fc='595959';}else if(sl.indexOf('escalat')>-1){bg='FFE0E0';fc='FF0000';}else if(sl.indexOf('overdue')>-1||sl.indexOf('past due')>-1){bg='FCE4D6';fc='C55A11';}else if(sl.indexOf('dispute')>-1||sl.indexOf('query')>-1){bg='EAD1F5';fc='7030A0';}else if(sl.indexOf('promise')>-1||sl.indexOf('ptp')>-1||sl.indexOf('for pay')>-1||sl.indexOf('payment')>-1){bg='DEEAF1';fc='1F4E79';}else if(sl.indexOf('paid')>-1||sl.indexOf('settled')>-1||sl.indexOf('collected')>-1){bg='E2EFDA';fc='00B050';}else if(sl.indexOf('confirm')>-1||sl.indexOf('clear')>-1||sl.indexOf('cancell')>-1){bg='FFF2CC';fc='833C00';}else if(sl.indexOf('chasing')>-1||sl.indexOf('chase')>-1||sl.indexOf('follow')>-1||sl.indexOf('timeline')>-1||sl.indexOf('always on')>-1){bg='D9E1F2';fc='305496';}else if(sl.indexOf('credit')>-1){bg='E2EFDA';fc='375623';}else if(sl.indexOf('pending')>-1){bg='FFF2CC';fc='7B5E00';}else if(sl.indexOf('current')>-1){bg='FFFFFF';fc='00B050';}return{font:{name:'Calibri',sz:11,bold:(bg!=='FFFFFF'),color:{rgb:fc}},fill:{fgColor:{rgb:bg}},alignment:{wrapText:true,vertical:'center'},border:borderThin};}
  var headers=['Unique Client Ref','Client Name','Reference Doc No','Assignment Number','Doc Date','Pmt Terms','Due Date','Doc Curr','Current','0-30','31-60','61-90','91-120','120+','Pareto','Corp Group','Controller','Status','Text'];
  var wsData=[headers];
- rows.forEach(function(r){var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;switch(r.aging){case 'Current':aC=r.amt;break;case '0-30':a0=r.amt;break;case '31-60':a3=r.amt;break;case '61-90':a6=r.amt;break;case '91-120':a9=r.amt;break;case '120+':case '120 +':a1=r.amt;break;}wsData.push([r.uniqueRef,r.name,r.ref,r.assign,r.docDate,r.pmtTerms,r.dueDate,r.cur,aC||'',a0||'',a3||'',a6||'',a9||'',a1||'',r.pareto,r.corp,r.ctrl,r.status,r.text]);});
+ rows.forEach(function(r){var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;switch(calcAgingBucket(r.dueDate)){case 'Current':aC=r.amt;break;case '0-30':a0=r.amt;break;case '31-60':a3=r.amt;break;case '61-90':a6=r.amt;break;case '91-120':a9=r.amt;break;case '120+':case '120 +':a1=r.amt;break;}wsData.push([r.uniqueRef,r.name,r.ref,r.assign,r.docDate,r.pmtTerms,r.dueDate,r.cur,aC||'',a0||'',a3||'',a6||'',a9||'',a1||'',r.pareto,r.corp,r.ctrl,r.status,r.text]);});
  var ws=XLSX.utils.aoa_to_sheet(wsData);
  ws['!cols']=[{wch:22},{wch:32},{wch:20},{wch:20},{wch:12},{wch:10},{wch:12},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:22},{wch:22},{wch:42},{wch:32}];
  var range=XLSX.utils.decode_range(ws['!ref']);
@@ -1336,6 +1336,25 @@ function scheduleRender(){
  if(renderTimer)clearTimeout(renderTimer);
  renderTimer=setTimeout(renderTable,80);
 }
+
+function calcAgingBucket(dueDateStr){
+  if(!dueDateStr) return '';
+  var parts=dueDateStr.split('/');
+  if(parts.length!==3) return '';
+  var dueDate=new Date(parseInt(parts[2],10),parseInt(parts[0],10)-1,parseInt(parts[1],10));
+  if(isNaN(dueDate.getTime())) return '';
+  var today=new Date();
+  today.setHours(0,0,0,0);
+  dueDate.setHours(0,0,0,0);
+  var diffDays=Math.floor((today-dueDate)/(1000*60*60*24));
+  if(diffDays<=0) return 'Current';
+  if(diffDays<=30) return '0-30';
+  if(diffDays<=60) return '31-60';
+  if(diffDays<=90) return '61-90';
+  if(diffDays<=120) return '91-120';
+  return '120+';
+}
+
 /* RENDER TABLE */
 function renderTable(){
  if(!dataLoaded)return;
@@ -1354,11 +1373,11 @@ function renderTable(){
  var r=allRows[i];
  if(srcChecked[r.src]===false)continue;
  var pt=(corp==='ALL'||r.corp===corp)&&(par==='ALL'||r.pareto===par)
- &&(ctrl==='ALL'||r.ctrl===ctrl)&&(age==='ALL'||r.aging===age)&&(cur==='ALL'||r.cur===cur);
+ &&(ctrl==='ALL'||r.ctrl===ctrl)&&(age==='ALL'||calcAgingBucket(r.dueDate)===age)&&(cur==='ALL'||r.cur===cur);
  var pg=clientTags.length===0||clientTags.some(function(t){return r.name.toLowerCase().indexOf(t)>-1||r.uniqueRef.toLowerCase().indexOf(t)>-1||r.ref.toLowerCase().indexOf(t)>-1||r.assign.toLowerCase().indexOf(t)>-1;});
  if(!pt||!pg)continue;
  var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;
- switch(r.aging){
+ switch(calcAgingBucket(r.dueDate)){
  case 'Current':aC=r.amt;break;
  case '0-30':a0=r.amt;break;
  case '31-60':a3=r.amt;break;
@@ -1367,7 +1386,7 @@ function renderTable(){
  case '120 +':case '120+':a1=r.amt;break;
  }
  var ac='amt-zero';
- switch(r.aging){
+ switch(calcAgingBucket(r.dueDate)){
  case 'Current':ac='amt-current';break;case '0-30':ac='amt-030';break;
  case '31-60':ac='amt-3160';break;case '61-90':ac='amt-6190';break;
  case '91-120':ac='amt-91120';break;case '120 +':case '120+':ac='amt-120p';break;
@@ -1414,7 +1433,7 @@ function renderTable(){
  convAEDtot+=(r.convAED||0);convEURtot+=(r.convEUR||0);
  agCur+=aC;ag030+=a0;ag3160+=a3;ag6190+=a6;ag91120+=a9;ag120p+=a1;
  if(r.cur){if(!agingByCur[r.cur])agingByCur[r.cur]={Current:0,'0-30':0,'31-60':0,'61-90':0,'91-120':0,'120+':0};
- switch(r.aging){case 'Current':agingByCur[r.cur].Current+=r.amt;break;case '0-30':agingByCur[r.cur]['0-30']+=r.amt;break;
+ switch(calcAgingBucket(r.dueDate)){case 'Current':agingByCur[r.cur].Current+=r.amt;break;case '0-30':agingByCur[r.cur]['0-30']+=r.amt;break;
  case '31-60':agingByCur[r.cur]['31-60']+=r.amt;break;case '61-90':agingByCur[r.cur]['61-90']+=r.amt;break;
  case '91-120':agingByCur[r.cur]['91-120']+=r.amt;break;case '120 +':case '120+':agingByCur[r.cur]['120+']+=r.amt;break;}}
  var key=r.uniqueRef+'|'+r.cur;
