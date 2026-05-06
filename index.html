@@ -704,6 +704,7 @@ function loadFromFirebase(callback){
  docDate:d.dd||'',pmtTerms:d.pt||'',dueDate:d.du||'',cur:d.c||'',
  aging:d.ag||'',pareto:d.p||'',text:d.t||'',corp:d.co||'',
  ctrl:d.ct||'',status:d.s||'',amt:d.am||0,convAED:d.ca||0,convEUR:d.ce||0,src:d.sr||'firebase',statusEditInfo:d.sei||'',paretoEditInfo:d.pei||''});
+ var _lr=allRows[allRows.length-1];if(!_lr.pmtTerms&&_lr.docDate&&_lr.dueDate)_lr.pmtTerms=calcPmtTerms(_lr.docDate,_lr.dueDate);
  if(d.sr)fileSet[d.sr]=1;
  });
  Object.keys(fileSet).forEach(function(fn){
@@ -910,6 +911,7 @@ function addWorkbook(wb,fileName){
  var rCur=gc(cCur),rAg=gc(cAg),rPar=gc(cPar),rTxt=gc(cTxt);
  var rCorp=gc(cCorp),rCtrl=gc(cCtrl),rSt=gc(cSt);
  var rDD=formatDate(gc(cDD)),rDue=formatDate(gc(cDue));
+ if(!rPT&&rDD&&rDue)rPT=calcPmtTerms(rDD,rDue);
  var rAmt=0;
  if(cAmt>=0&&row[cAmt]!==''&&row[cAmt]!==null)
  rAmt=parseFloat(String(row[cAmt]).replace(/,/g,''))||0;
@@ -1065,6 +1067,17 @@ function formatDate(val){
  }
  return s;
 }
+function calcPmtTerms(docDateStr,dueDateStr){
+ if(!docDateStr||!dueDateStr)return '';
+ var dp=docDateStr.split('/'),up=dueDateStr.split('/');
+ if(dp.length!==3||up.length!==3)return '';
+ var docDt=new Date(parseInt(dp[2],10),parseInt(dp[0],10)-1,parseInt(dp[1],10));
+ var dueDt=new Date(parseInt(up[2],10),parseInt(up[0],10)-1,parseInt(up[1],10));
+ if(isNaN(docDt.getTime())||isNaN(dueDt.getTime()))return '';
+ var diff=Math.round((dueDt-docDt)/(1000*60*60*24));
+ return String(diff);
+}
+
 function populateDropdown(id,items,allLabel,allVal){
  var sel=document.getElementById(id);if(!sel)return;
  var cur=sel.value;
@@ -1088,23 +1101,9 @@ function buildCurBar(curTots,filterActive){
 }
 function getStatusClass(s){
  var sl=(s||'').toLowerCase();
- if(!sl)return'status-default';
- if(sl.indexOf('write off')>-1||sl.indexOf('writeoff')>-1)return'status-writeoff';
- if(sl.indexOf('escalat')>-1)return'status-escalate';
- if(sl.indexOf('overdue')>-1||sl.indexOf('past due')>-1)return'status-overdue';
- if(sl.indexOf('dispute')>-1||sl.indexOf('query')>-1)return'status-dispute';
- if(sl.indexOf('promise')>-1||sl.indexOf('ptp')>-1)return'status-ptp';
- if(sl.indexOf('chasing')>-1||sl.indexOf('chase')>-1)return'status-followup';
- if(sl.indexOf('timeline')>-1||sl.indexOf('always on')>-1)return'status-followup';
- if(sl.indexOf('for pay')>-1||sl.indexOf('payment')>-1)return'status-ptp';
- if(sl.indexOf('paid')>-1||sl.indexOf('settled')>-1||sl.indexOf('collected')>-1)return'status-paid';
- if(sl.indexOf('confirm')>-1)return'status-confirm';
- if(sl.indexOf('follow')>-1)return'status-followup';
- if(sl.indexOf('credit')>-1)return'status-credit';
- if(sl.indexOf('pending')>-1)return'status-pending';
- if(sl.indexOf('current')>-1)return'status-current';
- if(sl.indexOf('clear')>-1||sl.indexOf('cancell')>-1)return'status-confirm';
- return'status-default';
+ if(!sl)return 'status-default';
+ if(sl.indexOf('collected')>-1)return 'status-paid';
+ return 'status-default';
 }
 function fmtNum(n){
  if(n===0)return'';
@@ -1146,9 +1145,9 @@ function updateRowPaidClass(tr,rowIdx){
  if(!tr)return;
  var r=allRows[rowIdx];
  var sl=(r.status||'').toLowerCase(),pl=(r.pareto||'').toLowerCase();
- if(sl.indexOf('paid')>-1||sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
- else if(sl.indexOf('cancelled')>-1||pl.indexOf('cancelled')>-1||sl.indexOf('canceled')>-1||pl.indexOf('canceled')>-1)tr.className='row-cancelled';
- else if(sl.indexOf('cleared')>-1||pl.indexOf('cleared')>-1||sl.indexOf('offset')>-1||pl.indexOf('offset')>-1||sl.indexOf('netting')>-1)tr.className='row-cleared';
+ if(sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
+ else if(pl.indexOf('cancelled')>-1||pl.indexOf('canceled')>-1)tr.className='row-cancelled';
+ else if(pl.indexOf('cleared')>-1||pl.indexOf('offset')>-1||pl.indexOf('netting')>-1)tr.className='row-cleared';
  else tr.className='';
 }
 function makeEditablePareto(td,rowIdx){
@@ -1316,7 +1315,7 @@ function downloadExcel() {
  var refStyle={font:{name:'Calibri',sz:11,bold:true,color:{rgb:'1F4E79'}},border:borderThin,alignment:{vertical:'center'}};
  var baseStyle={font:{name:'Calibri',sz:11},border:borderThin,alignment:{vertical:'center'}};
  function agingStyle(bgHex,fontHex,val){return{font:{name:'Consolas',sz:11,bold:true,color:{rgb:(val<0)?'FF0000':fontHex}},fill:{fgColor:{rgb:bgHex}},alignment:{horizontal:'right',vertical:'center'},border:borderThin,numFmt:'#,##0.00'};}
- function statusStyle(sv){var sl=(sv||'').toLowerCase(),bg='FFFFFF',fc='333333';if(sl.indexOf('write off')>-1||sl.indexOf('writeoff')>-1){bg='EDEDED';fc='595959';}else if(sl.indexOf('escalat')>-1){bg='FFE0E0';fc='FF0000';}else if(sl.indexOf('overdue')>-1||sl.indexOf('past due')>-1){bg='FCE4D6';fc='C55A11';}else if(sl.indexOf('dispute')>-1||sl.indexOf('query')>-1){bg='EAD1F5';fc='7030A0';}else if(sl.indexOf('promise')>-1||sl.indexOf('ptp')>-1||sl.indexOf('for pay')>-1||sl.indexOf('payment')>-1){bg='DEEAF1';fc='1F4E79';}else if(sl.indexOf('paid')>-1||sl.indexOf('settled')>-1||sl.indexOf('collected')>-1){bg='E2EFDA';fc='00B050';}else if(sl.indexOf('confirm')>-1||sl.indexOf('clear')>-1||sl.indexOf('cancell')>-1){bg='FFF2CC';fc='833C00';}else if(sl.indexOf('chasing')>-1||sl.indexOf('chase')>-1||sl.indexOf('follow')>-1||sl.indexOf('timeline')>-1||sl.indexOf('always on')>-1){bg='D9E1F2';fc='305496';}else if(sl.indexOf('credit')>-1){bg='E2EFDA';fc='375623';}else if(sl.indexOf('pending')>-1){bg='FFF2CC';fc='7B5E00';}else if(sl.indexOf('current')>-1){bg='FFFFFF';fc='00B050';}return{font:{name:'Calibri',sz:11,bold:(bg!=='FFFFFF'),color:{rgb:fc}},fill:{fgColor:{rgb:bg}},alignment:{wrapText:true,vertical:'center'},border:borderThin};}
+ function statusStyle(sv){var sl=(sv||'').toLowerCase(),bg='FFFFFF',fc='333333';if(sl.indexOf('collected')>-1){bg='E2EFDA';fc='00B050';}return{font:{name:'Calibri',sz:11,bold:(bg!=='FFFFFF'),color:{rgb:fc}},fill:{fgColor:{rgb:bg}},alignment:{wrapText:true,vertical:'center'},border:borderThin};}
  var headers=['Unique Client Ref','Client Name','Reference Doc No','Assignment Number','Doc Date','Pmt Terms','Due Date','Doc Curr','Current','0-30','31-60','61-90','91-120','120+','Pareto','Corp Group','Controller','Status','Text'];
  var wsData=[headers];
  rows.forEach(function(r){var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;switch(calcAgingBucket(r.dueDate)){case 'Current':aC=r.amt;break;case '0-30':a0=r.amt;break;case '31-60':a3=r.amt;break;case '61-90':a6=r.amt;break;case '91-120':a9=r.amt;break;case '120+':case '120 +':a1=r.amt;break;}wsData.push([r.uniqueRef,r.name,r.ref,r.assign,r.docDate,r.pmtTerms,r.dueDate,r.cur,aC||'',a0||'',a3||'',a6||'',a9||'',a1||'',r.pareto,r.corp,r.ctrl,r.status,r.text]);});
@@ -1408,9 +1407,9 @@ function renderTable(){
  }
  var tr=document.createElement('tr');
  var sl=(r.status||'').toLowerCase(),pl=(r.pareto||'').toLowerCase();
- if(sl.indexOf('paid')>-1||sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
- else if(sl.indexOf('cancelled')>-1||pl.indexOf('cancelled')>-1||sl.indexOf('canceled')>-1||pl.indexOf('canceled')>-1)tr.className='row-cancelled';
- else if(sl.indexOf('cleared')>-1||pl.indexOf('cleared')>-1||sl.indexOf('offset')>-1||pl.indexOf('offset')>-1||sl.indexOf('netting')>-1)tr.className='row-cleared';
+ if(sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
+ else if(pl.indexOf('cancelled')>-1||pl.indexOf('canceled')>-1)tr.className='row-cancelled';
+ else if(pl.indexOf('cleared')>-1||pl.indexOf('offset')>-1||pl.indexOf('netting')>-1)tr.className='row-cleared';
  tr.innerHTML=
  "<td class='ref-cell'>"+esc(r.uniqueRef)+'</td>'+
  '<td>'+esc(r.name)+'</td><td>'+esc(r.ref)+'</td>'+
