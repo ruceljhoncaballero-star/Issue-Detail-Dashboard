@@ -685,9 +685,10 @@ function loadFromFirebase(callback){
  var fileSet={};
  data.forEach(function(d){
  if(!d)return;
+ var _fbAg='';if(d.du){var _fdd=new Date(d.du);if(!isNaN(_fdd.getTime())){var _ft=new Date();_ft.setHours(0,0,0,0);_fdd.setHours(0,0,0,0);var _fd=Math.floor((_ft-_fdd)/86400000);if(_fd<=0)_fbAg='Current';else if(_fd<=30)_fbAg='0-30';else if(_fd<=60)_fbAg='31-60';else if(_fd<=90)_fbAg='61-90';else if(_fd<=120)_fbAg='91-120';else _fbAg='120 +';}}if(!_fbAg)_fbAg=d.ag||'';
  allRows.push({uniqueRef:d.u||'',name:d.n||'',ref:d.r||'',assign:d.a||'',
  docDate:d.dd||'',pmtTerms:d.pt||'',dueDate:d.du||'',cur:d.c||'',
- aging:d.ag||'',pareto:d.p||'',text:d.t||'',corp:d.co||'',
+ aging:_fbAg,pareto:d.p||'',text:d.t||'',corp:d.co||'',
  ctrl:d.ct||'',status:d.s||'',amt:d.am||0,convAED:d.ca||0,convEUR:d.ce||0,src:d.sr||'firebase'});
  if(d.sr)fileSet[d.sr]=1;
  });
@@ -889,9 +890,13 @@ function addWorkbook(wb,fileName){
  var v=row[col];return(v===null||v===undefined)?'':String(v).trim();
  }
  var rU=gc(cU),rN=gc(cN),rR=gc(cR),rAs=gc(cA),rPT=gc(cPT);
- var rCur=gc(cCur),rAg=gc(cAg),rPar=gc(cPar),rTxt=gc(cTxt);
+ var rCur=gc(cCur),rPar=gc(cPar),rTxt=gc(cTxt);
  var rCorp=gc(cCorp),rCtrl=gc(cCtrl),rSt=gc(cSt);
- var rDD=formatDate(gc(cDD)),rDue=formatDate(gc(cDue));
+ var rawDueVal=gc(cDue);
+ var rDD=formatDate(gc(cDD)),rDue=formatDate(rawDueVal);
+ var rAg='';
+ if(rawDueVal){var _dd;var _n=parseFloat(String(rawDueVal).replace(/,/g,''));if(!isNaN(_n)&&_n>1000&&_n<100000){_dd=new Date(Math.round((_n-25569)*86400*1000));}else{_dd=new Date(rawDueVal);}if(_dd&&!isNaN(_dd.getTime())){var _today=new Date();_today.setHours(0,0,0,0);_dd.setHours(0,0,0,0);var _diff=Math.floor((_today-_dd)/86400000);if(_diff<=0)rAg='Current';else if(_diff<=30)rAg='0-30';else if(_diff<=60)rAg='31-60';else if(_diff<=90)rAg='61-90';else if(_diff<=120)rAg='91-120';else rAg='120 +';}}
+ if(!rAg)rAg=gc(cAg);
  var rAmt=0;
  if(cAmt>=0&&row[cAmt]!==''&&row[cAmt]!==null)
  rAmt=parseFloat(String(row[cAmt]).replace(/,/g,''))||0;
@@ -1353,8 +1358,9 @@ function renderTable(){
  }
  if(!pc)continue;
  function atd(bg,val){
- var cl=bg+' '+(val<0?'amt-neg':val===0?'amt-zero':ac);
- return"<td class='"+cl+"'>"+(val===0?'&nbsp;':fmtNum(val))+'</td>';
+ if(val===0)return"<td class='"+bg+"'></td>";
+ var cl=bg+' '+(val<0?'amt-neg':ac);
+ return"<td class='"+cl+"'>"+fmtNum(val)+'</td>';
  }
  var tr=document.createElement('tr');
  var sl=(r.status||'').toLowerCase(),pl=(r.pareto||'').toLowerCase();
