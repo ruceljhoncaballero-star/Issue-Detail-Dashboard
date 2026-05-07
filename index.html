@@ -1147,7 +1147,7 @@ function updateRowPaidClass(tr,rowIdx){
  var sl=(r.status||'').toLowerCase(),pl=(r.pareto||'').toLowerCase();
  if(sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
  else if(pl.indexOf('cancelled')>-1||pl.indexOf('canceled')>-1)tr.className='row-cancelled';
- else if(pl.indexOf('cleared')>-1||pl.indexOf('offset')>-1||pl.indexOf('netting')>-1)tr.className='row-cleared';
+ else if(pl.indexOf('cleared')>-1)tr.className='row-cleared';
  else tr.className='';
 }
 function makeEditablePareto(td,rowIdx){
@@ -1409,7 +1409,7 @@ function renderTable(){
  var sl=(r.status||'').toLowerCase(),pl=(r.pareto||'').toLowerCase();
  if(sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
  else if(pl.indexOf('cancelled')>-1||pl.indexOf('canceled')>-1)tr.className='row-cancelled';
- else if(pl.indexOf('cleared')>-1||pl.indexOf('offset')>-1||pl.indexOf('netting')>-1)tr.className='row-cleared';
+ else if(pl.indexOf('cleared')>-1)tr.className='row-cleared';
  tr.innerHTML=
  "<td class='ref-cell'>"+esc(r.uniqueRef)+'</td>'+
  '<td>'+esc(r.name)+'</td><td>'+esc(r.ref)+'</td>'+
@@ -1776,12 +1776,12 @@ function processClearingDocs(wb,fileName){
  var hasCP=false,hasAMT=false,hasCC=false,hasZM=false,hasOff=false,allRefs=[];
  var offTypes=['GC','CG','CJ','CA','VP','DI','Z2'];
  for(var cd in clrDocs){var types=clrDocTypeMap[cd]||{};if(types['CP'])hasCP=true;if(clrDocAMTMap[cd])hasAMT=true;if(types['CC'])hasCC=true;if(types['ZM'])hasZM=true;for(var ot=0;ot<offTypes.length;ot++){if(types[offTypes[ot]])hasOff=true;}if(clrDocRefVals[cd])allRefs=allRefs.concat(clrDocRefVals[cd]);}
+ var refStr=allRefs.join(' ').toUpperCase();
  if(hasCP||hasAMT)return{p:'Paid',s:'Collected',c:hasCP?'paidCP':'paidAMT'};
- if(hasCC)return{p:'Cleared',s:'Cancelled',c:'cancelled'};
+ if(hasCC)return{p:'Cleared',s:'Cleared by Cancellation',c:'cancelled'};
+ if(refStr.indexOf('CANCEL')>-1)return{p:'Cleared',s:'Cleared by Cancellation',c:'cancelled'};
  if(hasZM)return{p:'Cleared',s:'Cleared by Credit Note',c:'creditNote'};
  if(hasOff)return{p:'Cleared',s:'Cleared by Offset',c:'offset'};
- var refStr=allRefs.join(' ').toUpperCase();
- if(refStr.indexOf('CANCEL')>-1)return{p:'Cleared',s:'Cancelled',c:'cancelled'};
  if(refStr.indexOf('OFFSET')>-1||refStr.indexOf('NETTING')>-1)return{p:'Cleared',s:'Cleared by Offset',c:'offset'};
  if(refStr.indexOf('WHT')>-1||refStr.indexOf('WITHHOLD')>-1)return{p:'Cleared',s:'Cleared by WHT',c:'wht'};
  if(refStr.indexOf('CREDIT')>-1)return{p:'Cleared',s:'Cleared by Credit Note',c:'creditNote'};
