@@ -106,6 +106,9 @@ table.main-tbl tbody tr.row-cleared td,table.main-tbl tbody tr.row-cleared td.re
 table.main-tbl tbody tr.row-cleared:hover td,table.main-tbl tbody tr.row-cleared:hover td.ref-cell,table.main-tbl tbody tr.row-cleared:hover td[class*='col-'],table.main-tbl tbody tr.row-cleared:hover td[class*='amt-'],table.main-tbl tbody tr.row-cleared:hover td.free-edit-cell,table.main-tbl tbody tr.row-cleared:hover td[class*='status-']{background:#C8C8C8 !important;color:#4A4A4A !important;}
 table.main-tbl tbody tr.row-cancelled td,table.main-tbl tbody tr.row-cancelled td.ref-cell,table.main-tbl tbody tr.row-cancelled td.col-current,table.main-tbl tbody tr.row-cancelled td.col-030,table.main-tbl tbody tr.row-cancelled td.col-3160,table.main-tbl tbody tr.row-cancelled td.col-6190,table.main-tbl tbody tr.row-cancelled td.col-91120,table.main-tbl tbody tr.row-cancelled td.col-120p,table.main-tbl tbody tr.row-cancelled td.amt-current,table.main-tbl tbody tr.row-cancelled td.amt-030,table.main-tbl tbody tr.row-cancelled td.amt-3160,table.main-tbl tbody tr.row-cancelled td.amt-6190,table.main-tbl tbody tr.row-cancelled td.amt-91120,table.main-tbl tbody tr.row-cancelled td.amt-120p,table.main-tbl tbody tr.row-cancelled td.free-edit-cell,table.main-tbl tbody tr.row-cancelled td[class*='status-']{background:#D5D5D5 !important;color:#4A4A4A !important;}
 table.main-tbl tbody tr.row-cancelled:hover td,table.main-tbl tbody tr.row-cancelled:hover td.ref-cell,table.main-tbl tbody tr.row-cancelled:hover td[class*='col-'],table.main-tbl tbody tr.row-cancelled:hover td[class*='amt-'],table.main-tbl tbody tr.row-cancelled:hover td.free-edit-cell,table.main-tbl tbody tr.row-cancelled:hover td[class*='status-']{background:#C8C8C8 !important;color:#4A4A4A !important;}
+table.main-tbl tbody tr.row-risk td,table.main-tbl tbody tr.row-risk td.ref-cell,table.main-tbl tbody tr.row-risk td.col-current,table.main-tbl tbody tr.row-risk td.col-030,table.main-tbl tbody tr.row-risk td.col-3160,table.main-tbl tbody tr.row-risk td.col-6190,table.main-tbl tbody tr.row-risk td.col-91120,table.main-tbl tbody tr.row-risk td.col-120p,table.main-tbl tbody tr.row-risk td.amt-current,table.main-tbl tbody tr.row-risk td.amt-030,table.main-tbl tbody tr.row-risk td.amt-3160,table.main-tbl tbody tr.row-risk td.amt-6190,table.main-tbl tbody tr.row-risk td.amt-91120,table.main-tbl tbody tr.row-risk td.amt-120p,table.main-tbl tbody tr.row-risk td.free-edit-cell,table.main-tbl tbody tr.row-risk td[class*='status-']{background:#FFE0E0 !important;color:#CC0000 !important;}
+table.main-tbl tbody tr.row-risk:hover td,table.main-tbl tbody tr.row-risk:hover td.ref-cell,table.main-tbl tbody tr.row-risk:hover td[class*='col-'],table.main-tbl tbody tr.row-risk:hover td[class*='amt-'],table.main-tbl tbody tr.row-risk:hover td.free-edit-cell,table.main-tbl tbody tr.row-risk:hover td[class*='status-']{background:#FFD0D0 !important;color:#CC0000 !important;}
+
 .clr-overlay{position:fixed;inset:0;background:rgba(74,60,16,.75);z-index:20000;display:none;align-items:center;justify-content:center;}
 .clr-overlay.show{display:flex;}
 .clr-dialog{background:#4a3c10;border:2px solid #c8b06a;border-radius:14px;padding:24px 28px;width:580px;max-width:95vw;max-height:85vh;overflow-y:auto;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:cdFadeIn .2s ease;}
@@ -1145,7 +1148,8 @@ function updateRowPaidClass(tr,rowIdx){
  if(!tr)return;
  var r=allRows[rowIdx];
  var sl=(r.status||'').toLowerCase(),pl=(r.pareto||'').toLowerCase();
- if(sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
+ if(pl.indexOf('risk')>-1)tr.className='row-risk';
+ else if(sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
  else if(pl.indexOf('cancelled')>-1||pl.indexOf('canceled')>-1)tr.className='row-cancelled';
  else if(pl.indexOf('cleared')>-1)tr.className='row-cleared';
  else tr.className='';
@@ -1407,7 +1411,8 @@ function renderTable(){
  }
  var tr=document.createElement('tr');
  var sl=(r.status||'').toLowerCase(),pl=(r.pareto||'').toLowerCase();
- if(sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
+ if(pl.indexOf('risk')>-1)tr.className='row-risk';
+ else if(sl.indexOf('collected')>-1||pl.indexOf('paid')>-1||pl.indexOf('collected')>-1)tr.className='row-paid';
  else if(pl.indexOf('cancelled')>-1||pl.indexOf('canceled')>-1)tr.className='row-cancelled';
  else if(pl.indexOf('cleared')>-1)tr.className='row-cleared';
  tr.innerHTML=
