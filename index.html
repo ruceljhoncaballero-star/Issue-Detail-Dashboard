@@ -272,6 +272,7 @@ table.main-tbl tbody td.amt-neg,table.main-tbl tbody td.amt-neg *{color:#FF0000 
  <span class="online-badge" id="onlineBadge"><span class="ob-dot"></span> <span id="onlineCount">0</span> online</span>
  <span class="fb-status fb-offline" id="fbStatus">&#x1F534; Connecting...</span>
  <button class="sync-btn" onclick="syncFromFirebase()">&#x1F504; Sync</button>
+ <button class="sync-btn" onclick="reparseFromCache()" style="background:#00B050;" title="Re-parse cached files with latest code">&#x1F504; Re-parse</button>
 </div>
 </div>
 <div class="fb-toast" id="fbToast"></div>
@@ -458,9 +459,15 @@ table.main-tbl tbody td.amt-neg,table.main-tbl tbody td.amt-neg *{color:#FF0000 
 <div class="ytip" id="ytip"></div>
 <script>
 var _userName='Rucel';
+var CODE_VERSION=9;
 var allRows=[],loadedFiles=[],colFilters={},clientTags=[],srcChecked={},totalDups=0,dataLoaded=false,hasEdits=false;
 var paretoOptions=[];
 var undoMassUpdateSnapshot=null,undoClearingDocsSnapshot=null;
+/* === IndexedDB File Cache === */
+function openCacheDB(cb){var req=indexedDB.open('IDD_FileCache',1);req.onupgradeneeded=function(e){e.target.result.createObjectStore('files',{keyPath:'name'});};req.onsuccess=function(e){cb(e.target.result);};req.onerror=function(){cb(null);};}
+function cacheFile(name,data,type){openCacheDB(function(db){if(!db)return;var tx=db.transaction('files','readwrite');tx.objectStore('files').put({name:name,data:data,type:type,ts:Date.now()});});}
+function getCachedFiles(cb){openCacheDB(function(db){if(!db){cb([]);return;}var tx=db.transaction('files','readonly');var req=tx.objectStore('files').getAll();req.onsuccess=function(){cb(req.result||[]);};req.onerror=function(){cb([]);};});}
+function clearFileCache(){openCacheDB(function(db){if(!db)return;var tx=db.transaction('files','readwrite');tx.objectStore('files').clear();});}
 /* === PERFORMANCE === */
 var MAX_RENDER_ROWS=500;
 var freezeRender=false;
@@ -520,6 +527,7 @@ document.getElementById('muFileInput').addEventListener('change',function(e){
  var reader=new FileReader();
  reader.onload=function(ev){
  try{
+ cacheFile(file.name,ev.target.result,ext);
  var wb;
  if(ext==='csv')wb=XLSX.read(ev.target.result,{type:'string',raw:false});
  else wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
@@ -1719,6 +1727,41 @@ function toggleSummary(){
  if(summaryVisible){panel.style.display='flex';iconSpan.innerHTML=eyeOpen;}
  else{panel.style.display='none';iconSpan.innerHTML=eyeClosed;}
 }
+/* === RE-PARSE FROM CACHE === */
+function reparseFromCache(){
+ getCachedFiles(function(cached){
+ if(!cached.length){showToast('\u26a0 No cached files. Upload first.');return;}
+ showLoading('Re-parsing '+cached.length+' cached file(s)...','Applying latest code...');
+ allRows=[];loadedFiles=[];srcChecked={};totalDups=0;paretoOptions=[];
+ var idx=0;
+ function next(){
+ if(idx>=cached.length){
+  setProgress(85,'Deduplicating...');
+  setTimeout(function(){
+  var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;
+  setProgress(95,'Building dashboard...');
+  setTimeout(function(){
+   try{finalizeLoad();}catch(e){console.warn('finalizeLoad error:',e);}
+   localStorage.setItem('IDD_CODE_VERSION',String(CODE_VERSION));
+   setProgress(100,'Done!');setTimeout(hideLoading,500);
+   showToast('\u2705 Re-parse complete (v'+CODE_VERSION+')');
+  },30);
+  },30);
+  return;
+ }
+ var f=cached[idx];
+ setProgress(Math.round((idx/cached.length)*80),'Re-parsing: '+f.name);
+ try{
+  var wb;
+  if(f.type==='csv')wb=XLSX.read(f.data,{type:'string',raw:false});
+  else wb=XLSX.read(new Uint8Array(f.data),{type:'array',cellDates:true});
+  addWorkbook(wb,f.name);
+ }catch(err){console.warn('Re-parse error:',f.name,err);}
+ idx++;setTimeout(next,10);
+ }
+ setTimeout(next,50);
+ });
+}
 /* == FIREBASE: Silent auto-load == */
 (function(){
  fbSyncing=true;
@@ -1726,6 +1769,19 @@ function toggleSummary(){
  if(found){
  if(typeof deduplicateRows==='function'){var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;}
  try{finalizeLoad();}catch(e){console.warn('Auto-load error:',e);}
+ }
+ var lastVer=parseInt(localStorage.getItem('IDD_CODE_VERSION'))||0;
+ if(lastVer<CODE_VERSION){
+ getCachedFiles(function(cached){
+  if(cached.length>0){
+  showToast('\ud83d\udd04 Code updated (v'+CODE_VERSION+') - Re-parsing cached files...');
+  setTimeout(function(){reparseFromCache();},800);
+  } else {
+  localStorage.setItem('IDD_CODE_VERSION',String(CODE_VERSION));
+  }
+ });
+ } else {
+ localStorage.setItem('IDD_CODE_VERSION',String(CODE_VERSION));
  }
  setTimeout(function(){
  fbSyncing=false;
