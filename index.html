@@ -560,7 +560,7 @@ function processMassUpdate(wb){
  if(!newPar&&!newSta){skipped++;continue;}
  var matches=[];
  if(refVal){var rk=refVal.toLowerCase();if(refMap[rk])matches=matches.concat(refMap[rk]);}
- if(matches.length===0&&asnVal){var ak=asnVal.toLowerCase();if(asnMap[ak])matches=matches.concat(asnMap[ak]);}
+ if(matches.length===0&&asnVal){var ak=asnVal.toLowerCase();if(asnMap[ak]){if(asnMap[ak].length<=5){matches=matches.concat(asnMap[ak]);}else{skipped++;log.push('<span class="mu-skip">✖ '+(refVal||asnVal)+' — skipped (generic assignment "'+asnVal+'" matches '+asnMap[ak].length+' rows)</span>');continue;}}}
  var seen={};matches=matches.filter(function(idx){if(seen[idx])return false;seen[idx]=1;return true;});
  if(matches.length===0){skipped++;log.push('<span class="mu-skip">\u2716 '+(refVal||asnVal)+' \u2014 no match</span>');continue;}
  for(var mi=0;mi<matches.length;mi++){
@@ -761,6 +761,8 @@ function listenForFieldChanges(){
  var changed=false;
  if(d.p!==undefined&&allRows[idx].pareto!==d.p){allRows[idx].pareto=d.p;changed=true;}
  if(d.s!==undefined&&allRows[idx].status!==d.s){allRows[idx].status=d.s;changed=true;}
+ if(d.pei!==undefined){allRows[idx].paretoEditInfo=d.pei;changed=true;}
+ if(d.sei!==undefined){allRows[idx].statusEditInfo=d.sei;changed=true;}
  if(changed){
  if(!isEditing&&typeof scheduleRender==='function')scheduleRender();
  if(!isEditing)showToast('\ud83d\udfe2 Status/Pareto updated');
@@ -1808,7 +1810,41 @@ function processClearingDocs(wb,fileName){
  resEl.innerHTML='<b style="color:#FFD700;">\u2705 Done!</b><br>File: <b>'+fileName+'</b> \u2014 '+totalRows+' rows read<br><br><span style="color:#e0d5b8;">\uD83D\uDCB0 Paid (CP): <b>'+cnt.paidCP+'</b> | \uD83D\uDCB0 Paid (AMT): <b>'+cnt.paidAMT+'</b> | \u274C Cancelled: <b>'+cnt.cancelled+'</b> | \uD83D\uDCDD Credit Note: <b>'+cnt.creditNote+'</b> | \uD83D\uDD04 Offset: <b>'+cnt.offset+'</b> | \uD83D\uDD04 WHT: <b>'+cnt.wht+'</b> | \uD83D\uDCC4 Other: <b>'+cnt.other+'</b><br>Updated: <b style="color:#9BE79B;">'+updated+'</b> dashboard rows</span>';
 }
 /* YELLOW TOOLTIP */
-(function(){var tip=document.getElementById('ytip');if(!tip)return;document.addEventListener('mousemove',function(e){var td=e.target;while(td&&td.tagName!=='TD')td=td.parentElement;if(!td||!td.hasAttribute('data-editinfo')){tip.style.display='none';return;}var info=td.getAttribute('data-editinfo');if(!info||info===''){tip.style.display='none';return;}tip.textContent=info;tip.style.display='block';tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';});document.addEventListener('mouseout',function(e){var td=e.target;while(td&&td.tagName!=='TD')td=td.parentElement;if(td&&td.hasAttribute('data-editinfo'))document.getElementById('ytip').style.display='none';});})();
+(function(){
+ var tip=document.getElementById('ytip');
+ if(!tip)return;
+ var currentTd=null;
+ document.addEventListener('mouseover',function(e){
+  var td=e.target;
+  while(td&&td.tagName!=='TD')td=td.parentElement;
+  if(!td||!td.hasAttribute('data-editinfo')){
+   if(currentTd&&td!==currentTd){tip.style.display='none';currentTd=null;}
+   return;
+  }
+  var info=td.getAttribute('data-editinfo');
+  if(!info||info===''){
+   tip.style.display='none';currentTd=null;return;
+  }
+  currentTd=td;
+  tip.textContent=info;
+  tip.style.display='block';
+ },true);
+ document.addEventListener('mousemove',function(e){
+  if(tip.style.display==='block'){
+   tip.style.left=(e.clientX+14)+'px';
+   tip.style.top=(e.clientY+14)+'px';
+  }
+ });
+ document.addEventListener('mouseout',function(e){
+  var td=e.target;
+  while(td&&td.tagName!=='TD')td=td.parentElement;
+  if(!td)return;
+  var rel=e.relatedTarget;
+  while(rel&&rel!==td)rel=rel.parentElement;
+  if(rel===td)return;
+  if(td===currentTd){tip.style.display='none';currentTd=null;}
+ },true);
+})();
 /* COLUMN RESIZE */
 function initColResize(){var tbl=document.getElementById('tbl');if(!tbl)return;var ths=tbl.querySelectorAll('thead tr.hrow th');ths.forEach(function(th){if(th.querySelector('.col-grip'))return;th.style.position='relative';var grip=document.createElement('div');grip.className='col-grip';th.appendChild(grip);grip.addEventListener('mousedown',function(e){e.preventDefault();e.stopPropagation();var startX=e.pageX,startW=th.offsetWidth;tbl.style.tableLayout='fixed';if(!tbl.style.width||tbl.style.width==='auto')tbl.style.width=tbl.offsetWidth+'px';ths.forEach(function(t){if(!t.style.width)t.style.width=t.offsetWidth+'px';});function onMove(ev){var nw=Math.max(30,startW+(ev.pageX-startX));th.style.width=nw+'px';th.style.minWidth=nw+'px';}function onUp(){document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);document.body.style.cursor='';}document.body.style.cursor='col-resize';document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onUp);});});}initColResize();var _origRT=typeof renderTable==='function'?renderTable:null;if(_origRT){renderTable=function(){_origRT.apply(this,arguments);setTimeout(initColResize,120);};}
 
