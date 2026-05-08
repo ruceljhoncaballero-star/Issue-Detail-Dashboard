@@ -882,9 +882,10 @@ function addWorkbook(wb,fileName){
  var cTxt=fc(['text','narration','description','remark']);
  var cCorp=fc(['corp','hfm','named client']);
  var cCtrl=fc(['assigned controller','controller','cpm']);
- /* FIX: Smart amount detection - excludes local/group currency columns */
-    function fcAmt(kws,excl){for(var k=0;k<kws.length;k++)for(var j=0;j<hdrs.length;j++){if(hdrs[j].indexOf(kws[k])>-1){var skip=false;if(excl)for(var e=0;e<excl.length;e++){if(hdrs[j].indexOf(excl[e])>-1){skip=true;break;}}if(!skip)return j;}}return -1;}
-    var cAmt=fcAmt(['remaining am','remain amt','remaining amount','open amt','open am','open amount','amt in doc','net amount','net amt','balance','amt','amount'],['in loc','local','total bs','total lcy','lcy','group cur','group currency','receivable']);
+ /* FIX v2: Prioritize document currency amount */
+var cAmt=-1;for(var _ad=0;_ad<hdrs.length;_ad++){if(hdrs[_ad].indexOf('in doc')>-1&&(hdrs[_ad].indexOf('amt')>-1||hdrs[_ad].indexOf('amount')>-1)){cAmt=_ad;break;}}
+if(cAmt<0){var _amtKws=['remaining am','remain amt','remaining amount','open amt','open am','open amount','net amount','net amt','balance'];var _amtExcl=['in loc','local','total bs','total lcy','lcy','group cur','group currency','receivable','in grp','grp cur'];for(var _ak=0;_ak<_amtKws.length&&cAmt<0;_ak++){for(var _aj=0;_aj<hdrs.length;_aj++){if(hdrs[_aj].indexOf(_amtKws[_ak])>-1){var _skip=false;for(var _ae=0;_ae<_amtExcl.length;_ae++){if(hdrs[_aj].indexOf(_amtExcl[_ae])>-1){_skip=true;break;}}if(!_skip){cAmt=_aj;break;}}}}}
+if(cAmt<0){for(var _af=0;_af<hdrs.length;_af++){if(hdrs[_af].indexOf('amt')>-1||hdrs[_af].indexOf('amount')>-1){var _skip2=false;var _excl2=['in loc','local','total bs','total lcy','lcy','group cur','group currency','receivable','in grp','grp cur'];for(var _ae2=0;_ae2<_excl2.length;_ae2++){if(hdrs[_af].indexOf(_excl2[_ae2])>-1){_skip2=true;break;}}if(!_skip2){cAmt=_af;break;}}}}
  var cConvAED=-1;
  for(var ca=0;ca<hdrs.length;ca++){
  var h=hdrs[ca];
