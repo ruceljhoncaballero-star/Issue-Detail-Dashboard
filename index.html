@@ -882,7 +882,9 @@ function addWorkbook(wb,fileName){
  var cTxt=fc(['text','narration','description','remark']);
  var cCorp=fc(['corp','hfm','named client']);
  var cCtrl=fc(['assigned controller','controller','cpm']);
- var cAmt=fc(['remaining am','remain amt','remaining amount','open amt','open am','open amount','amt in doc','amt in loc','net amount','net amt','balance','amt','amount']);
+ /* FIX: Smart amount detection - excludes local/group currency columns */
+    function fcAmt(kws,excl){for(var k=0;k<kws.length;k++)for(var j=0;j<hdrs.length;j++){if(hdrs[j].indexOf(kws[k])>-1){var skip=false;if(excl)for(var e=0;e<excl.length;e++){if(hdrs[j].indexOf(excl[e])>-1){skip=true;break;}}if(!skip)return j;}}return -1;}
+    var cAmt=fcAmt(['remaining am','remain amt','remaining amount','open amt','open am','open amount','amt in doc','net amount','net amt','balance','amt','amount'],['in loc','local','total bs','total lcy','lcy','group cur','group currency','receivable']);
  var cConvAED=-1;
  for(var ca=0;ca<hdrs.length;ca++){
  var h=hdrs[ca];
