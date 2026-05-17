@@ -70,36 +70,41 @@ body{font-family:Calibri,Arial,sans-serif;font-size:11px;background:#f0f0f0;}
 .clr-btn:hover{background:#ccc;}
 .last-update{font-size:10px;color:#888;margin-left:auto;font-style:italic;}
 .both-summary{display:flex;justify-content:center;align-items:flex-start;gap:20px;padding:12px 18px;flex-wrap:wrap;background:#f0f0f0;}
-.summary-wrap{display:flex;flex-direction:column;align-items:center;}
+.summary-wrap{display:flex;flex-direction:column;align-items:center;border-radius:10px;}
 .summary-title{font-size:11px;font-weight:bold;color:#4a3c10;margin-bottom:5px;text-align:center;}
-.sum-tbl{border-collapse:collapse;background:#fff;table-layout:auto;width:auto;box-shadow:0 1px 3px rgba(0,0,0,.1);}
-.sum-tbl thead tr{background:#7B6A2E;color:#fff;}
-.sum-tbl thead th{padding:6px 14px;text-align:center;font-size:11px;border:1px solid #5a4a1e;white-space:nowrap;}
-.sum-tbl tbody td{padding:4px 14px;border:1px solid #e0e0e0;font-size:11px;white-space:nowrap;text-align:center;}
+.sum-tbl{border-collapse:separate;border-spacing:0;background:#fff;table-layout:auto;width:auto;box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:10px;overflow:hidden;}
+.sum-tbl thead tr{background:linear-gradient(135deg,#7B6A2E 0%,#a8932e 100%);color:#fff;}
+.sum-tbl thead th{padding:10px 16px;text-align:center;font-size:11.5px;border:none;border-bottom:2px solid #5a4a1e;white-space:nowrap;letter-spacing:.3px;}
+.sum-tbl tbody td{padding:9px 16px;font-size:11.5px;border:none;border-bottom:1px solid #eee;white-space:nowrap;text-align:center;}
+.sum-tbl tbody tr{transition:background .2s ease,transform .15s ease;cursor:pointer;}
+.sum-tbl tbody tr:hover{background:linear-gradient(90deg,#fff8e1 0%,#fff3cd 100%);transform:scale(1.005);box-shadow:0 2px 8px rgba(123,106,46,.12);}
+.sum-tbl tbody tr:nth-child(even){background:#fafaf6;}
+.sum-tbl tbody tr:nth-child(even):hover{background:linear-gradient(90deg,#fff8e1 0%,#fff3cd 100%);}
 .sum-tbl tbody tr:nth-child(even){background:#fafafa;}
 .sum-tbl tbody tr:hover{background:#fff3cd;}
 .sum-tbl .num{text-align:right;font-family:Consolas,monospace;}
 .aging-wrap{display:flex;flex-direction:column;align-items:center;}
 .aging-title{font-size:11px;font-weight:bold;color:#4a3c10;margin-bottom:5px;text-align:center;}
-.aging-tbl{border-collapse:collapse;background:#7B6A2E;table-layout:auto;width:auto;box-shadow:0 1px 3px rgba(0,0,0,.1);}
-.aging-tbl thead th{padding:8px 20px;text-align:center;font-size:11px;font-weight:bold;border:1px solid #5a4a1e;color:#fff;white-space:nowrap;}
+.aging-tbl{border-collapse:separate;border-spacing:0;background:#7B6A2E;table-layout:auto;width:auto;box-shadow:0 4px 16px rgba(0,0,0,.12);border-radius:10px;overflow:hidden;}
+.aging-tbl thead th{padding:10px 20px;text-align:center;font-size:11.5px;font-weight:bold;border:none;border-bottom:2px solid #5a4a1e;color:#fff;white-space:nowrap;letter-spacing:.3px;}
 .aging-tbl tbody tr{background:#7B6A2E;}
-.aging-tbl tbody td{padding:6px 20px;border:1px solid #5a4a1e;font-size:11px;color:#fff;font-weight:bold;white-space:nowrap;}
+.aging-tbl tbody td{padding:8px 20px;border:none;border-bottom:1px solid rgba(255,255,255,.15);font-size:11.5px;color:#fff;font-weight:bold;white-space:nowrap;}
 .aging-tbl tbody td.aging-label{text-align:center;}
 .aging-tbl tbody td.aging-amt{text-align:right;font-family:Consolas,monospace;min-width:130px;}
 .aging-tbl tbody tr:hover{background:#5a4a1e;}
 .aging-total-row{background:#4a3c10 !important;border-top:2px solid #FFD700;}
 .aging-total-row td{color:#FFD700 !important;font-size:12px !important;font-weight:bold !important;}
-.table-wrap{overflow:auto;max-height:520px;}
+.table-wrap{overflow:auto;max-height:520px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.08);}
 table.main-tbl{border-collapse:collapse;width:100%;background:#fff;}
-table.main-tbl thead tr.hrow{background:#7B6A2E;color:#fff;position:sticky;top:0;z-index:3;}
+table.main-tbl thead tr.hrow{background:linear-gradient(135deg,#7B6A2E 0%,#a8932e 100%);color:#fff;position:sticky;top:0;z-index:3;}
 table.main-tbl thead tr.hrow th{padding:5px 7px;text-align:left;white-space:nowrap;border:1px solid #5a4a1e;font-size:11px;cursor:pointer;}
 table.main-tbl thead tr.hrow th:hover{background:#5a4a1e;}
 table.main-tbl thead tr.frow{position:sticky;top:27px;z-index:2;background:#f9f9f9;}
 table.main-tbl thead tr.frow td{padding:2px 3px;border:1px solid #ddd;}
 table.main-tbl thead tr.frow input,table.main-tbl thead tr.frow select{width:100%;padding:2px 3px;border:1px solid #ccc;border-radius:3px;font-size:10px;}
-table.main-tbl tbody tr{border-bottom:1px solid #e8e8e8;background:#fff;}
-table.main-tbl tbody tr:hover{filter:brightness(.97);}
+table.main-tbl tbody tr{border-bottom:1px solid #e8e8e8;background:#fff;transition:background .15s ease;}
+table.main-tbl tbody tr:hover{background:#f5f3eb !important;filter:none;}
+.main-tbl tbody tr:nth-child(even){background:#fafaf8;}
 table.main-tbl tbody tr.row-paid td,table.main-tbl tbody tr.row-paid td.ref-cell,table.main-tbl tbody tr.row-paid td.col-current,table.main-tbl tbody tr.row-paid td.col-030,table.main-tbl tbody tr.row-paid td.col-3160,table.main-tbl tbody tr.row-paid td.col-6190,table.main-tbl tbody tr.row-paid td.col-91120,table.main-tbl tbody tr.row-paid td.col-120p,table.main-tbl tbody tr.row-paid td.amt-current,table.main-tbl tbody tr.row-paid td.amt-030,table.main-tbl tbody tr.row-paid td.amt-3160,table.main-tbl tbody tr.row-paid td.amt-6190,table.main-tbl tbody tr.row-paid td.amt-91120,table.main-tbl tbody tr.row-paid td.amt-120p,table.main-tbl tbody tr.row-paid td.free-edit-cell,table.main-tbl tbody tr.row-paid td[class*='status-']{background:#C6EFCE !important;}
 table.main-tbl tbody tr.row-paid:hover td,table.main-tbl tbody tr.row-paid:hover td.ref-cell,table.main-tbl tbody tr.row-paid:hover td[class*='col-'],table.main-tbl tbody tr.row-paid:hover td[class*='amt-'],table.main-tbl tbody tr.row-paid:hover td.free-edit-cell,table.main-tbl tbody tr.row-paid:hover td[class*='status-']{background:#B4E0B8 !important;}
 table.main-tbl tbody tr.row-cleared td,table.main-tbl tbody tr.row-cleared td.ref-cell,table.main-tbl tbody tr.row-cleared td.col-current,table.main-tbl tbody tr.row-cleared td.col-030,table.main-tbl tbody tr.row-cleared td.col-3160,table.main-tbl tbody tr.row-cleared td.col-6190,table.main-tbl tbody tr.row-cleared td.col-91120,table.main-tbl tbody tr.row-cleared td.col-120p,table.main-tbl tbody tr.row-cleared td.amt-current,table.main-tbl tbody tr.row-cleared td.amt-030,table.main-tbl tbody tr.row-cleared td.amt-3160,table.main-tbl tbody tr.row-cleared td.amt-6190,table.main-tbl tbody tr.row-cleared td.amt-91120,table.main-tbl tbody tr.row-cleared td.amt-120p,table.main-tbl tbody tr.row-cleared td.free-edit-cell,table.main-tbl tbody tr.row-cleared td[class*='status-']{background:#D5D5D5 !important;color:#4A4A4A !important;}
@@ -330,12 +335,12 @@ table.main-tbl tbody td.amt-neg,table.main-tbl tbody td.amt-neg *{color:#FF0000 
  <table class="sum-tbl">
  <thead>
  <tr>
- <th>Unique Client Ref</th><th>Client Name</th><th>Currency</th>
- <th class="num">Total Amount</th><th class="num"># Invoices</th>
+ <th style="width:30px">#</th><th>Unique Client Ref</th><th>Client Name</th><th>Currency</th>
+ <th class="num">Total Amount</th><th class="num"># Invoices</th><th>Top Pareto</th><th>Oldest Aging</th>
  </tr>
  </thead>
  <tbody id="sumBody">
- <tr><td colspan="5" class="no-selection-msg">Select a filter above to populate summary</td></tr>
+ <tr><td colspan="8" class="no-selection-msg">Select a filter above to populate summary</td></tr>
  </tbody>
  </table>
  </div>
@@ -455,11 +460,11 @@ table.main-tbl tbody td.amt-neg,table.main-tbl tbody td.amt-neg *{color:#FF0000 
  <button class="clr-close" id="clrClose">Close</button>
  </div>
 </div>
-<div class="user-modal-overlay" id="userModal"><div class="user-modal"><h3>&#x1F464; Select Your Name</h3><select id="userSelect"><option value="Rucel">Rucel</option><option value="Ellaine">Ellaine</option><option value="Claudine">Claudine</option><option value="Peter">Peter</option><option value="Edwalyn">Edwalyn</option><option value="Sheinna">Sheinna</option><option value="Keycee">Keycee</option><option value="Cherry Mae">Cherry Mae</option><option value="Dunia">Dunia</option><option value="Josiane">Josiane</option></select><button onclick="_userName=document.getElementById('userSelect').value;document.getElementById('userModal').style.display='none';">&#x2714; Confirm</button></div></div>
+<div class="user-modal-overlay" id="userModal"><div class="user-modal"><h3>&#x1F464; Select Your Name</h3><select id="userSelect"><option value="Rucel">Rucel</option><option value="Ellaine">Ellaine</option><option value="Claudine">Claudine</option><option value="Peter">Peter</option><option value="Edwalyn">Edwalyn</option><option value="Sheinna">Sheinna</option><option value="Keycee">Keycee</option><option value="Aira">Aira</option><option value="Cherry Mae">Cherry Mae</option><option value="Dunia">Dunia</option><option value="Josiane">Josiane</option></select><button onclick="_userName=document.getElementById('userSelect').value;document.getElementById('userModal').style.display='none';">&#x2714; Confirm</button></div></div>
 <div class="ytip" id="ytip"></div>
 <script>
 var _userName='Rucel';
-var CODE_VERSION=9;
+var CODE_VERSION=10;
 var allRows=[],loadedFiles=[],colFilters={},clientTags=[],srcChecked={},totalDups=0,dataLoaded=false,hasEdits=false;
 var paretoOptions=[];
 var undoMassUpdateSnapshot=null,undoClearingDocsSnapshot=null;
@@ -1454,7 +1459,10 @@ function renderTable(){
  case '31-60':agingByCur[r.cur]['31-60']+=r.amt;break;case '61-90':agingByCur[r.cur]['61-90']+=r.amt;break;
  case '91-120':agingByCur[r.cur]['91-120']+=r.amt;break;case '120 +':case '120+':agingByCur[r.cur]['120+']+=r.amt;break;}}
  var key=r.uniqueRef+'|'+r.cur;
- if(!sumMap[key])sumMap[key]={cno:r.uniqueRef,nm:r.name,cur:r.cur,tot:0,inv:0};
+ if(!sumMap[key])sumMap[key]={cno:r.uniqueRef,nm:r.name,cur:r.cur,tot:0,inv:0,paretos:{},oldestAging:''};
+ if(r.pareto)sumMap[key].paretos[r.pareto]=(sumMap[key].paretos[r.pareto]||0)+1;
+ var _agBk=calcAgingBucket(r.dueDate);
+ var _agOrder=['120+','91-120','61-90','31-60','0-30','Current',''];var _curOld=_agOrder.indexOf(sumMap[key].oldestAging);var _newOld=_agOrder.indexOf(_agBk);if(_agBk&&_newOld>=0&&(_curOld<0||_newOld<_curOld))sumMap[key].oldestAging=_agBk;
  sumMap[key].tot+=r.amt;sumMap[key].inv++;
  }
  document.getElementById('tBody').innerHTML='';
@@ -1503,10 +1511,16 @@ function renderTable(){
  ttr.innerHTML=thtml;ab.appendChild(ttr);
  var sb=document.getElementById('sumBody');sb.innerHTML='';
  var sf=document.createDocumentFragment();
- Object.keys(sumMap).sort().forEach(function(k){
- var s=sumMap[k];var tr2=document.createElement('tr');
- tr2.innerHTML='<td>'+esc(s.cno)+'</td><td>'+esc(s.nm)+'</td><td>'+esc(s.cur)+'</td>'+
- "<td class='num'>"+s.tot.toLocaleString('en-US',{minimumFractionDigits:2})+'</td>'+"<td class='num'>"+s.inv+'</td>';
+ var _sumIdx=0;Object.keys(sumMap).sort().forEach(function(k){
+ _sumIdx++;var s=sumMap[k];var tr2=document.createElement('tr');
+ var _topP='';var _topPC=0;for(var _pk in s.paretos){if(s.paretos[_pk]>_topPC){_topPC=s.paretos[_pk];_topP=_pk;}}
+ var _agClr='';if(s.oldestAging==='120+'||s.oldestAging==='91-120')_agClr='color:#C55A11;font-weight:bold;';else if(s.oldestAging==='Current'||s.oldestAging==='0-30')_agClr='color:#00B050;font-weight:bold;';else if(s.oldestAging)_agClr='color:#ED7D31;font-weight:bold;';
+ tr2.innerHTML='<td class="num">'+_sumIdx+'</td><td>'+esc(s.cno)+'</td><td>'+esc(s.nm)+' &#128279;</td><td>'+esc(s.cur)+'</td>'+
+ "<td class='num'>"+s.tot.toLocaleString('en-US',{minimumFractionDigits:2})+'</td>'+"<td class='num'>"+s.inv+'</td>'+
+ '<td>'+esc(_topP)+'</td><td style="'+_agClr+'">'+esc(s.oldestAging||'-')+'</td>';
+ tr2.title='\u27A1 Click to filter invoices for '+s.nm;
+ tr2.style.cursor='pointer';
+ tr2.onclick=(function(name){return function(){clientTags=[];clientTags.push(name.toLowerCase());renderTags();scheduleRender();setTimeout(function(){var tw=document.querySelector('.table-wrap');if(tw)tw.scrollIntoView({behavior:'smooth',block:'start'});},150);};})(s.nm);
  sf.appendChild(tr2);
  });
  sb.appendChild(sf);
@@ -1520,7 +1534,7 @@ function renderTable(){
  ab2.appendChild(ph2);
  var sb2=document.getElementById('sumBody');sb2.innerHTML='';
  var ph=document.createElement('tr');
- ph.innerHTML='<td colspan="5" class="no-selection-msg">Select a filter above to populate summary</td>';
+ ph.innerHTML='<td colspan="8" class="no-selection-msg">Select a filter above to populate summary</td>';
  sb2.appendChild(ph);
  document.getElementById('sumTitle').textContent='CLIENT SUMMARY';
  }
@@ -1591,7 +1605,7 @@ function clearData(){
  });
  var sb=document.getElementById('sumBody');sb.innerHTML='';
  var ph=document.createElement('tr');
- ph.innerHTML='<td colspan="5" class="no-selection-msg">Select a filter above to populate summary</td>';
+ ph.innerHTML='<td colspan="8" class="no-selection-msg">Select a filter above to populate summary</td>';
  sb.appendChild(ph);
  document.getElementById('curBar').innerHTML="<span class='lbl'>CURRENCY SUBTOTALS:</span>";
  document.getElementById('convBar').innerHTML="<span class='lbl'>CURRENCY CONVERSION:</span>";
