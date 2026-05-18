@@ -476,7 +476,7 @@ table.main-tbl tbody td.amt-neg,table.main-tbl tbody td.amt-neg *{color:#FF0000 
 <div class="ytip" id="ytip"></div>
 <script>
 var _userName='Rucel';
-var CODE_VERSION=11;
+var CODE_VERSION=12;
 var allRows=[],loadedFiles=[],colFilters={},clientTags=[],srcChecked={},totalDups=0,dataLoaded=false,hasEdits=false;
 var paretoOptions=[];
 var undoMassUpdateSnapshot=null,undoClearingDocsSnapshot=null;
@@ -1752,6 +1752,11 @@ function reparseFromCache(){
  getCachedFiles(function(cached){
  if(!cached.length){showToast('\u26a0 No cached files. Upload first.');return;}
  showLoading('Re-parsing '+cached.length+' cached file(s)...','Applying latest code...');
+ /* Preserve Firebase edits (pareto, status, editInfo) before re-parse */
+ var _editMap={};
+ for(var _ei=0;_ei<allRows.length;_ei++){var _er=allRows[_ei];var _ek=((_er.ref||'')+'|'+(_er.assign||'')+'|'+(_er.uniqueRef||'')).toLowerCase();if(_er.pareto||_er.status||_er.paretoEditInfo||_er.statusEditInfo){_editMap[_ek]={p:_er.pareto||'',s:_er.status||'',pei:_er.paretoEditInfo||'',sei:_er.statusEditInfo||''};}}
+ var _editCount=Object.keys(_editMap).length;
+ console.log('[reparse] Preserved edits for '+_editCount+' rows');
  allRows=[];loadedFiles=[];srcChecked={};totalDups=0;paretoOptions=[];
  var idx=0;
  function next(){
@@ -1759,12 +1764,16 @@ function reparseFromCache(){
   setProgress(85,'Deduplicating...');
   setTimeout(function(){
   var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;
+  /* Restore preserved edits after re-parse */
+  var _restored=0;
+  for(var _ri=0;_ri<allRows.length;_ri++){var _rr=allRows[_ri];var _rk=((_rr.ref||'')+'|'+(_rr.assign||'')+'|'+(_rr.uniqueRef||'')).toLowerCase();if(_editMap[_rk]){var _se=_editMap[_rk];if(_se.p)_rr.pareto=_se.p;if(_se.s)_rr.status=_se.s;if(_se.pei)_rr.paretoEditInfo=_se.pei;if(_se.sei)_rr.statusEditInfo=_se.sei;_restored++;}}
+  console.log('[reparse] Restored edits for '+_restored+' of '+_editCount+' rows');
   setProgress(95,'Building dashboard...');
   setTimeout(function(){
    try{finalizeLoad();}catch(e){console.warn('finalizeLoad error:',e);}
    localStorage.setItem('IDD_CODE_VERSION',String(CODE_VERSION));
    setProgress(100,'Done!');setTimeout(hideLoading,500);
-   showToast('\u2705 Re-parse complete (v'+CODE_VERSION+')');
+   showToast('\u2705 Re-parse complete (v'+CODE_VERSION+')'+(_restored>0?' | Restored '+_restored+' edit(s)':''));
   },30);
   },30);
   return;
