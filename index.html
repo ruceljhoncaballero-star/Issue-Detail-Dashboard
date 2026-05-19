@@ -370,38 +370,40 @@ table.main-tbl tbody td.amt-neg,table.main-tbl tbody td.amt-neg *{color:#FF0000 
  <th onclick="sortTable(1)">Name &#x21C5;</th>
  <th onclick="sortTable(2)">Reference Doc No &#x21C5;</th>
  <th onclick="sortTable(3)">Assignment Number &#x21C5;</th>
- <th onclick="sortTable(4)">Doc Date &#x21C5;</th>
- <th onclick="sortTable(5)">Pmt Terms &#x21C5;</th>
- <th onclick="sortTable(6)">Due Date &#x21C5;</th>
- <th onclick="sortTable(7)">Doc Curr &#x21C5;</th>
- <th onclick="sortTable(8)">Current &#x21C5;</th>
- <th onclick="sortTable(9)">0-30 &#x21C5;</th>
- <th onclick="sortTable(10)">31-60 &#x21C5;</th>
- <th onclick="sortTable(11)">61-90 &#x21C5;</th>
- <th onclick="sortTable(12)">91-120 &#x21C5;</th>
- <th onclick="sortTable(13)">120+ &#x21C5;</th>
- <th onclick="sortTable(14)">Pareto &#x21C5;</th>
- <th onclick="sortTable(15)" id="statusHeader">Status &#x21C5;</th>
- <th onclick="sortTable(16)">Text &#x21C5;</th>
+ <th onclick="sortTable(4)">Invoice Reference &#x21C5;</th>
+ <th onclick="sortTable(5)">Doc Date &#x21C5;</th>
+ <th onclick="sortTable(6)">Pmt Terms &#x21C5;</th>
+ <th onclick="sortTable(7)">Due Date &#x21C5;</th>
+ <th onclick="sortTable(8)">Doc Curr &#x21C5;</th>
+ <th onclick="sortTable(9)">Current &#x21C5;</th>
+ <th onclick="sortTable(10)">0-30 &#x21C5;</th>
+ <th onclick="sortTable(11)">31-60 &#x21C5;</th>
+ <th onclick="sortTable(12)">61-90 &#x21C5;</th>
+ <th onclick="sortTable(13)">91-120 &#x21C5;</th>
+ <th onclick="sortTable(14)">120+ &#x21C5;</th>
+ <th onclick="sortTable(15)">Pareto &#x21C5;</th>
+ <th onclick="sortTable(16)" id="statusHeader">Status &#x21C5;</th>
+ <th onclick="sortTable(17)">Text &#x21C5;</th>
  </tr>
  <tr class="frow" id="colFilterRow">
  <td><input type="text" oninput="colFilter(0,this.value)" placeholder="Filter..."></td>
  <td><input type="text" oninput="colFilter(1,this.value)" placeholder="Filter..."></td>
  <td><input type="text" oninput="colFilter(2,this.value)" placeholder="Filter..."></td>
  <td><input type="text" oninput="colFilter(3,this.value)" placeholder="Filter..."></td>
- <td><input type="text" oninput="colFilter(4,this.value)" placeholder="MM/DD/YYYY"></td>
- <td><input type="text" oninput="colFilter(5,this.value)" placeholder="Filter..."></td>
- <td><input type="text" oninput="colFilter(6,this.value)" placeholder="MM/DD/YYYY"></td>
- <td><select id="colCurFilter" onchange="colFilter(7,this.value)"><option value="">All</option></select></td>
- <td><input type="text" oninput="colFilter(8,this.value)" placeholder="Filter..."></td>
+ <td><input type="text" oninput="colFilter(4,this.value)" placeholder="Filter..."></td>
+ <td><input type="text" oninput="colFilter(5,this.value)" placeholder="MM/DD/YYYY"></td>
+ <td><input type="text" oninput="colFilter(6,this.value)" placeholder="Filter..."></td>
+ <td><input type="text" oninput="colFilter(7,this.value)" placeholder="MM/DD/YYYY"></td>
+ <td><select id="colCurFilter" onchange="colFilter(8,this.value)"><option value="">All</option></select></td>
  <td><input type="text" oninput="colFilter(9,this.value)" placeholder="Filter..."></td>
  <td><input type="text" oninput="colFilter(10,this.value)" placeholder="Filter..."></td>
  <td><input type="text" oninput="colFilter(11,this.value)" placeholder="Filter..."></td>
  <td><input type="text" oninput="colFilter(12,this.value)" placeholder="Filter..."></td>
  <td><input type="text" oninput="colFilter(13,this.value)" placeholder="Filter..."></td>
- <td><select id="colParetoFilter" onchange="colFilter(14,this.value)"><option value="">All</option></select></td>
- <td><input type="text" id="colStatusFilter" oninput="colFilter(15,this.value)" placeholder="Filter status..."></td>
- <td><input type="text" oninput="colFilter(16,this.value)" placeholder="Filter..."></td>
+ <td><input type="text" oninput="colFilter(14,this.value)" placeholder="Filter..."></td>
+ <td><select id="colParetoFilter" onchange="colFilter(15,this.value)"><option value="">All</option></select></td>
+ <td><input type="text" id="colStatusFilter" oninput="colFilter(16,this.value)" placeholder="Filter status..."></td>
+ <td><input type="text" oninput="colFilter(17,this.value)" placeholder="Filter..."></td>
  </tr>
  </thead>
  <tbody id="tBody">
@@ -485,7 +487,6 @@ function openCacheDB(cb){var req=indexedDB.open('IDD_FileCache',1);req.onupgrade
 function cacheFile(name,data,type){openCacheDB(function(db){if(!db)return;var tx=db.transaction('files','readwrite');tx.objectStore('files').put({name:name,data:data,type:type,ts:Date.now()});});}
 function getCachedFiles(cb){openCacheDB(function(db){if(!db){cb([]);return;}var tx=db.transaction('files','readonly');var req=tx.objectStore('files').getAll();req.onsuccess=function(){cb(req.result||[]);};req.onerror=function(){cb([]);};});}
 function clearFileCache(){openCacheDB(function(db){if(!db)return;var tx=db.transaction('files','readwrite');tx.objectStore('files').clear();});}
-
 function removeCachedFile(name,cb){openCacheDB(function(db){if(!db){if(cb)cb();return;}var tx=db.transaction('files','readwrite');tx.objectStore('files').delete(name);tx.oncomplete=function(){if(cb)cb();};tx.onerror=function(){if(cb)cb();};});}
 /* === PERFORMANCE === */
 var MAX_RENDER_ROWS=500;
@@ -680,7 +681,7 @@ function showToast(msg){
 function saveAllToFirebase(){
  if(!allRows.length)return;
  var saveData=allRows.map(function(r,i){
- return{i:i,u:r.uniqueRef||'',n:r.name||'',r:r.ref||'',a:r.assign||'',dd:r.docDate||'',
+ return{i:i,u:r.uniqueRef||'',n:r.name||'',r:r.ref||'',a:r.assign||'',ir:r.invRef||'',dd:r.docDate||'',
  pt:r.pmtTerms||'',du:r.dueDate||'',c:r.cur||'',ag:r.aging||'',p:r.pareto||'',
  t:r.text||'',co:r.corp||'',ct:r.ctrl||'',s:r.status||'',sei:r.statusEditInfo||'',pei:r.paretoEditInfo||'',am:r.amt||0,ca:r.convAED||0,ce:r.convEUR||0,sr:r.src||''};
  });
@@ -730,7 +731,7 @@ function loadFromFirebase(callback){
  var fileSet={};
  data.forEach(function(d){
  if(!d)return;
- allRows.push({uniqueRef:d.u||'',name:d.n||'',ref:d.r||'',assign:d.a||'',
+ allRows.push({uniqueRef:d.u||'',name:d.n||'',ref:d.r||'',assign:d.a||'',invRef:d.ir||'',
  docDate:d.dd||'',pmtTerms:d.pt||'',dueDate:d.du||'',cur:d.c||'',
  aging:d.ag||'',pareto:d.p||'',text:d.t||'',corp:d.co||'',
  ctrl:d.ct||'',status:d.s||'',amt:d.am||0,convAED:d.ca||0,convEUR:d.ce||0,src:d.sr||'firebase',statusEditInfo:d.sei||'',paretoEditInfo:d.pei||''});
@@ -896,6 +897,7 @@ function addWorkbook(wb,fileName){
  var cN=fc(['client name','customer name','name']);
  var cR=fc(['ref doc','reference doc','invoice no','invoice number','reference document','document no','doc no']);
  var cA=fc(['assignment number','assignment no','assignment id','asn no']);
+ var cIR=fc(['invoice reference','inv ref','inv reference','invoice ref']);
  /* FIX: Added 'document date' to match headers like "Document Date" */
  var cDD=fc(['document date','doc date','invoice date']);
  var cPT=fc(['pmt','payment term','pay term']);
@@ -942,7 +944,7 @@ if(cAmt<0){for(var _af=0;_af<hdrs.length;_af++){if(hdrs[_af].indexOf('amt')>-1||
  if(col<0||col>=row.length)return'';
  var v=row[col];return(v===null||v===undefined)?'':String(v).trim();
  }
- var rU=gc(cU),rN=gc(cN),rR=gc(cR),rAs=gc(cA),rPT=gc(cPT);
+ var rU=gc(cU),rN=gc(cN),rR=gc(cR),rAs=gc(cA),rIR=gc(cIR),rPT=gc(cPT);
  var rCur=gc(cCur),rAg=gc(cAg),rPar=gc(cPar),rTxt=gc(cTxt);
  var rCorp=gc(cCorp),rCtrl=gc(cCtrl),rSt=gc(cSt);
  var rDD=formatDate(gc(cDD)),rDue=formatDate(gc(cDue));
@@ -971,12 +973,12 @@ if(cAmt<0){for(var _af=0;_af<hdrs.length;_af++){if(hdrs[_af].indexOf('amt')>-1||
  if(_bc<0)continue;
  var _bv=0;if(row[_bc]!==''&&row[_bc]!==null)_bv=parseFloat(String(row[_bc]).replace(/,/g,''))||0;
  if(_bv===0&&_pushed)continue;
- allRows.push({uniqueRef:rU,name:rN,ref:rR,assign:rAs,docDate:rDD,pmtTerms:rPT,dueDate:rDue,cur:rCur,aging:_bn,pareto:rPar,text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:_bv,convAED:rConvAED,convEUR:rConvEUR,src:fileName,statusEditInfo:'',paretoEditInfo:''});
+ allRows.push({uniqueRef:rU,name:rN,ref:rR,assign:rAs,invRef:rIR,docDate:rDD,pmtTerms:rPT,dueDate:rDue,cur:rCur,aging:_bn,pareto:rPar,text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:_bv,convAED:rConvAED,convEUR:rConvEUR,src:fileName,statusEditInfo:'',paretoEditInfo:''});
  _pushed=true;ra++;
  }
- if(!_pushed){allRows.push({uniqueRef:rU,name:rN,ref:rR,assign:rAs,docDate:rDD,pmtTerms:rPT,dueDate:rDue,cur:rCur,aging:'',pareto:rPar,text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:rAmt,convAED:rConvAED,convEUR:rConvEUR,src:fileName,statusEditInfo:'',paretoEditInfo:''});ra++;}
+ if(!_pushed){allRows.push({uniqueRef:rU,name:rN,ref:rR,assign:rAs,invRef:rIR,docDate:rDD,pmtTerms:rPT,dueDate:rDue,cur:rCur,aging:'',pareto:rPar,text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:rAmt,convAED:rConvAED,convEUR:rConvEUR,src:fileName,statusEditInfo:'',paretoEditInfo:''});ra++;}
  }else{
- allRows.push({uniqueRef:rU,name:rN,ref:rR,assign:rAs,docDate:rDD,pmtTerms:rPT,dueDate:rDue,cur:rCur,aging:rAg,pareto:rPar,text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:rAmt,convAED:rConvAED,convEUR:rConvEUR,src:fileName,statusEditInfo:'',paretoEditInfo:''});ra++;
+ allRows.push({uniqueRef:rU,name:rN,ref:rR,assign:rAs,invRef:rIR,docDate:rDD,pmtTerms:rPT,dueDate:rDue,cur:rCur,aging:rAg,pareto:rPar,text:rTxt,corp:rCorp,ctrl:rCtrl,status:rSt,amt:rAmt,convAED:rConvAED,convEUR:rConvEUR,src:fileName,statusEditInfo:'',paretoEditInfo:''});ra++;
  }
  }
  loadedFiles.push({name:fileName,rows:ra,sheet:sn});
@@ -1298,7 +1300,7 @@ function getFilteredRows(){
  if(srcChecked[r.src]===false)continue;
  var pt=(corp==='ALL'||r.corp===corp)&&(par==='ALL'||r.pareto===par)
  &&(ctrl==='ALL'||r.ctrl===ctrl)&&(age==='ALL'||calcAgingBucket(r.dueDate)===age)&&(cur==='ALL'||r.cur===cur);
- var pg=clientTags.length===0||clientTags.some(function(t){return r.name.toLowerCase().indexOf(t)>-1||r.uniqueRef.toLowerCase().indexOf(t)>-1||r.ref.toLowerCase().indexOf(t)>-1||r.assign.toLowerCase().indexOf(t)>-1;});
+ var pg=clientTags.length===0||clientTags.some(function(t){return r.name.toLowerCase().indexOf(t)>-1||r.uniqueRef.toLowerCase().indexOf(t)>-1||r.ref.toLowerCase().indexOf(t)>-1||r.assign.toLowerCase().indexOf(t)>-1||r.invRef.toLowerCase().indexOf(t)>-1;});
  if(!pt||!pg)continue;
  var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;
  switch(calcAgingBucket(r.dueDate)){
@@ -1306,7 +1308,7 @@ function getFilteredRows(){
  case '31-60':a3=r.amt;break;case '61-90':a6=r.amt;break;
  case '91-120':a9=r.amt;break;case '120 +':case '120+':a1=r.amt;break;
  }
- var cells=[r.uniqueRef,r.name,r.ref,r.assign,r.docDate,r.pmtTerms,r.dueDate,r.cur,
+ var cells=[r.uniqueRef,r.name,r.ref,r.assign,r.invRef,r.docDate,r.pmtTerms,r.dueDate,r.cur,
  aC?fmtNum(aC):'',a0?fmtNum(a0):'',a3?fmtNum(a3):'',a6?fmtNum(a6):'',
  a9?fmtNum(a9):'',a1?fmtNum(a1):'',r.pareto,r.status,r.text];
  var pc=true;
@@ -1350,14 +1352,14 @@ function downloadExcel() {
  var baseStyle={font:{name:'Calibri',sz:11},border:borderThin,alignment:{vertical:'center'}};
  function agingStyle(bgHex,fontHex,val){return{font:{name:'Consolas',sz:11,bold:true,color:{rgb:(val<0)?'FF0000':fontHex}},fill:{fgColor:{rgb:bgHex}},alignment:{horizontal:'right',vertical:'center'},border:borderThin,numFmt:'#,##0.00'};}
  function statusStyle(sv){var sl=(sv||'').toLowerCase(),bg='FFFFFF',fc='333333';if(sl.indexOf('collected')>-1){bg='E2EFDA';fc='00B050';}return{font:{name:'Calibri',sz:11,bold:(bg!=='FFFFFF'),color:{rgb:fc}},fill:{fgColor:{rgb:bg}},alignment:{wrapText:true,vertical:'center'},border:borderThin};}
- var headers=['Unique Client Ref','Client Name','Reference Doc No','Assignment Number','Doc Date','Pmt Terms','Due Date','Doc Curr','Current','0-30','31-60','61-90','91-120','120+','Pareto','Corp Group','Controller','Status','Text'];
+ var headers=['Unique Client Ref','Client Name','Reference Doc No','Assignment Number','Invoice Reference','Doc Date','Pmt Terms','Due Date','Doc Curr','Current','0-30','31-60','61-90','91-120','120+','Pareto','Corp Group','Controller','Status','Text'];
  var wsData=[headers];
- rows.forEach(function(r){var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;switch(calcAgingBucket(r.dueDate)){case 'Current':aC=r.amt;break;case '0-30':a0=r.amt;break;case '31-60':a3=r.amt;break;case '61-90':a6=r.amt;break;case '91-120':a9=r.amt;break;case '120+':case '120 +':a1=r.amt;break;}wsData.push([r.uniqueRef,r.name,r.ref,r.assign,r.docDate,r.pmtTerms,r.dueDate,r.cur,aC||'',a0||'',a3||'',a6||'',a9||'',a1||'',r.pareto,r.corp,r.ctrl,r.status,r.text]);});
+ rows.forEach(function(r){var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;switch(calcAgingBucket(r.dueDate)){case 'Current':aC=r.amt;break;case '0-30':a0=r.amt;break;case '31-60':a3=r.amt;break;case '61-90':a6=r.amt;break;case '91-120':a9=r.amt;break;case '120+':case '120 +':a1=r.amt;break;}wsData.push([r.uniqueRef,r.name,r.ref,r.assign,r.invRef,r.docDate,r.pmtTerms,r.dueDate,r.cur,aC||'',a0||'',a3||'',a6||'',a9||'',a1||'',r.pareto,r.corp,r.ctrl,r.status,r.text]);});
  var ws=XLSX.utils.aoa_to_sheet(wsData);
- ws['!cols']=[{wch:22},{wch:32},{wch:20},{wch:20},{wch:12},{wch:10},{wch:12},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:22},{wch:22},{wch:42},{wch:32}];
+ ws['!cols']=[{wch:22},{wch:32},{wch:20},{wch:20},{wch:20},{wch:12},{wch:10},{wch:12},{wch:10},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:22},{wch:22},{wch:42},{wch:32}];
  var range=XLSX.utils.decode_range(ws['!ref']);
  for(var C=range.s.c;C<=range.e.c;C++){var ca=XLSX.utils.encode_cell({r:0,c:C});if(ws[ca])ws[ca].s=hdrStyle;}
- for(var R=1;R<=range.e.r;R++){for(var C2=range.s.c;C2<=range.e.c;C2++){var addr=XLSX.utils.encode_cell({r:R,c:C2});if(!ws[addr])continue;var val=ws[addr].v;if(C2===0){ws[addr].s=refStyle;}else if(C2>=8&&C2<=11){var nv=parseFloat(val)||0;ws[addr].s=agingStyle('FFFACD','00B050',nv);if(typeof val==='number'||(val!==''&&!isNaN(parseFloat(val)))){ws[addr].t='n';ws[addr].v=parseFloat(val)||0;}}else if(C2===12){var nv2=parseFloat(val)||0;ws[addr].s=agingStyle('FCE4D6','C55A11',nv2);if(typeof val==='number'||(val!==''&&!isNaN(parseFloat(val)))){ws[addr].t='n';ws[addr].v=parseFloat(val)||0;}}else if(C2===13){var nv3=parseFloat(val)||0;ws[addr].s=agingStyle('F8CBAD','C55A11',nv3);if(typeof val==='number'||(val!==''&&!isNaN(parseFloat(val)))){ws[addr].t='n';ws[addr].v=parseFloat(val)||0;}}else if(C2===17){ws[addr].s=statusStyle(String(val||''));}else{ws[addr].s=baseStyle;}}}
+ for(var R=1;R<=range.e.r;R++){for(var C2=range.s.c;C2<=range.e.c;C2++){var addr=XLSX.utils.encode_cell({r:R,c:C2});if(!ws[addr])continue;var val=ws[addr].v;if(C2===0){ws[addr].s=refStyle;}else if(C2>=9&&C2<=12){var nv=parseFloat(val)||0;ws[addr].s=agingStyle('FFFACD','00B050',nv);if(typeof val==='number'||(val!==''&&!isNaN(parseFloat(val)))){ws[addr].t='n';ws[addr].v=parseFloat(val)||0;}}else if(C2===13){var nv2=parseFloat(val)||0;ws[addr].s=agingStyle('FCE4D6','C55A11',nv2);if(typeof val==='number'||(val!==''&&!isNaN(parseFloat(val)))){ws[addr].t='n';ws[addr].v=parseFloat(val)||0;}}else if(C2===14){var nv3=parseFloat(val)||0;ws[addr].s=agingStyle('F8CBAD','C55A11',nv3);if(typeof val==='number'||(val!==''&&!isNaN(parseFloat(val)))){ws[addr].t='n';ws[addr].v=parseFloat(val)||0;}}else if(C2===18){ws[addr].s=statusStyle(String(val||''));}else{ws[addr].s=baseStyle;}}}
  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Issue Detail');
  var now=new Date();var dd=String(now.getDate()).padStart(2,'0');var mm=String(now.getMonth()+1).padStart(2,'0');var yy=now.getFullYear();
  var parts=['IssueDetail'];var corp=document.getElementById('fCorp').value;var par=document.getElementById('fPareto').value;var ctrl=document.getElementById('fCtrl').value;
@@ -1407,7 +1409,7 @@ function renderTable(){
  if(srcChecked[r.src]===false)continue;
  var pt=(corp==='ALL'||r.corp===corp)&&(par==='ALL'||r.pareto===par)
  &&(ctrl==='ALL'||r.ctrl===ctrl)&&(age==='ALL'||calcAgingBucket(r.dueDate)===age)&&(cur==='ALL'||r.cur===cur);
- var pg=clientTags.length===0||clientTags.some(function(t){return r.name.toLowerCase().indexOf(t)>-1||r.uniqueRef.toLowerCase().indexOf(t)>-1||r.ref.toLowerCase().indexOf(t)>-1||r.assign.toLowerCase().indexOf(t)>-1;});
+ var pg=clientTags.length===0||clientTags.some(function(t){return r.name.toLowerCase().indexOf(t)>-1||r.uniqueRef.toLowerCase().indexOf(t)>-1||r.ref.toLowerCase().indexOf(t)>-1||r.assign.toLowerCase().indexOf(t)>-1||r.invRef.toLowerCase().indexOf(t)>-1;});
  if(!pt||!pg)continue;
  var aC=0,a0=0,a3=0,a6=0,a9=0,a1=0;
  switch(calcAgingBucket(r.dueDate)){
@@ -1424,7 +1426,7 @@ function renderTable(){
  case '31-60':ac='amt-3160';break;case '61-90':ac='amt-6190';break;
  case '91-120':ac='amt-91120';break;case '120 +':case '120+':ac='amt-120p';break;
  }
- var cells=[r.uniqueRef,r.name,r.ref,r.assign,r.docDate,r.pmtTerms,r.dueDate,r.cur,
+ var cells=[r.uniqueRef,r.name,r.ref,r.assign,r.invRef,r.docDate,r.pmtTerms,r.dueDate,r.cur,
  aC?fmtNum(aC):'',a0?fmtNum(a0):'',a3?fmtNum(a3):'',a6?fmtNum(a6):'',
  a9?fmtNum(a9):'',a1?fmtNum(a1):'',r.pareto,r.status,r.text];
  var pc=true;
@@ -1448,7 +1450,7 @@ function renderTable(){
  tr.innerHTML=
  "<td class='ref-cell'>"+esc(r.uniqueRef)+'</td>'+
  '<td>'+esc(r.name)+'</td><td>'+esc(r.ref)+'</td>'+
- '<td>'+esc(r.assign)+'</td><td>'+esc(r.docDate)+'</td>'+
+ '<td>'+esc(r.assign)+'</td><td>'+esc(r.invRef)+'</td><td>'+esc(r.docDate)+'</td>'+
  '<td>'+esc(r.pmtTerms)+'</td><td>'+esc(r.dueDate)+'</td>'+
  '<td>'+esc(r.cur)+'</td>'+
  atd('col-current',aC)+atd('col-030',a0)+atd('col-3160',a3)+
@@ -1659,7 +1661,7 @@ function getSearchSuggestions(query){
  for(var i=0;i<allRows.length;i++){
  var r=allRows[i];
  if(srcChecked[r.src]===false)continue;
- var fields=[{val:r.name,type:'Client'},{val:r.uniqueRef,type:'Ref'},{val:r.ref,type:'Invoice'},{val:r.assign,type:'Assignment'}];
+ var fields=[{val:r.name,type:'Client'},{val:r.uniqueRef,type:'Ref'},{val:r.ref,type:'Invoice'},{val:r.assign,type:'Assignment'},{val:r.invRef,type:'InvRef'}];
  for(var f=0;f<fields.length;f++){
  var v=fields[f].val;
  if(!v||!v.trim())continue;
@@ -1686,7 +1688,7 @@ function showDropdown(query){
  suggestions.slice(0,20).forEach(function(s){
  var div=document.createElement('div');
  div.className='tag-dd-item';
- var badgeColor=s.type==='Client'?'#7B6A2E':s.type==='Ref'?'#1F4E79':s.type==='Assignment'?'#833C00':'#C55A11';
+ var badgeColor=s.type==='Client'?'#7B6A2E':s.type==='Ref'?'#1F4E79':s.type==='Assignment'?'#833C00':s.type==='InvRef'?'#2E6B4F':'#C55A11';
  var badge='<span style="display:inline-block;background:'+badgeColor+';color:#fff;border-radius:3px;padding:0 5px;font-size:9px;font-weight:bold;margin-right:6px;vertical-align:middle;">'+s.type+'</span>';
  var li=s.label.toLowerCase(),si=li.indexOf(q);
  var txt='';
@@ -1717,7 +1719,7 @@ var sortDir={};
 function sortTable(col){
  if(!dataLoaded)return;
  var asc=sortDir[col]!==true;sortDir[col]=asc;
- var keys=['uniqueRef','name','ref','assign','docDate','pmtTerms','dueDate','cur',
+ var keys=['uniqueRef','name','ref','assign','invRef','docDate','pmtTerms','dueDate','cur',
  'aging','aging','aging','aging','aging','aging','pareto','status','text'];
  var key=keys[col]||'uniqueRef';
  allRows.sort(function(a,b){
@@ -1813,6 +1815,7 @@ function reparseFromCache(){
  });
  } else {
  localStorage.setItem('IDD_CODE_VERSION',String(CODE_VERSION));
+getCachedFiles(function(cached){if(cached.length>0){showToast('\uD83D\uDCC2 Loaded '+cached.length+' file(s) from cache');}});
  }
  setTimeout(function(){
  fbSyncing=false;
