@@ -476,7 +476,7 @@ table.main-tbl tbody td.amt-neg,table.main-tbl tbody td.amt-neg *{color:#FF0000 
 <div class="ytip" id="ytip"></div>
 <script>
 var _userName='Rucel';
-var CODE_VERSION=12;
+var CODE_VERSION=13;
 var allRows=[],loadedFiles=[],colFilters={},clientTags=[],srcChecked={},totalDups=0,dataLoaded=false,hasEdits=false;
 var paretoOptions=[];
 var undoMassUpdateSnapshot=null,undoClearingDocsSnapshot=null;
@@ -485,6 +485,8 @@ function openCacheDB(cb){var req=indexedDB.open('IDD_FileCache',1);req.onupgrade
 function cacheFile(name,data,type){openCacheDB(function(db){if(!db)return;var tx=db.transaction('files','readwrite');tx.objectStore('files').put({name:name,data:data,type:type,ts:Date.now()});});}
 function getCachedFiles(cb){openCacheDB(function(db){if(!db){cb([]);return;}var tx=db.transaction('files','readonly');var req=tx.objectStore('files').getAll();req.onsuccess=function(){cb(req.result||[]);};req.onerror=function(){cb([]);};});}
 function clearFileCache(){openCacheDB(function(db){if(!db)return;var tx=db.transaction('files','readwrite');tx.objectStore('files').clear();});}
+
+function removeCachedFile(name,cb){openCacheDB(function(db){if(!db){if(cb)cb();return;}var tx=db.transaction('files','readwrite');tx.objectStore('files').delete(name);tx.oncomplete=function(){if(cb)cb();};tx.onerror=function(){if(cb)cb();};});}
 /* === PERFORMANCE === */
 var MAX_RENDER_ROWS=500;
 var freezeRender=false;
@@ -1071,7 +1073,7 @@ function removeFile(fileName){
  setTimeout(function(){
  allRows=allRows.filter(function(r){return r.src!==fileName;});
  loadedFiles=loadedFiles.filter(function(f){return f.name!==fileName;});
- delete srcChecked[fileName];
+ delete srcChecked[fileName];removeCachedFile(fileName);if(loadedFiles.length===0){clearFileCache();}
  if(loadedFiles.length===0){hideLoading();clearData();return;}
  var res=deduplicateRows(allRows);allRows=res.rows;totalDups=res.dupCount;
  try{finalizeLoad();}catch(e){console.warn('Error:',e);}
